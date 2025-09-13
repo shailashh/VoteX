@@ -29,7 +29,11 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
   }, [stream]);
 
   const startCamera = useCallback(async () => {
-    stopCamera();
+    // Make sure to stop any existing stream before starting a new one.
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+  
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
@@ -48,7 +52,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       setError(errorMessage);
       setStream(null);
     }
-  }, [stopCamera]);
+  }, [stream]);
 
   useEffect(() => {
     if (!photo) {
@@ -57,10 +61,12 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       stopCamera();
     }
     
+    // Cleanup function to stop the camera when the component unmounts or photo is taken
     return () => {
       stopCamera();
     };
-  }, [photo, startCamera, stopCamera]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
