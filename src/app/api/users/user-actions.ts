@@ -116,6 +116,9 @@ export async function loginPartner(aadhaar: string, password: string) {
     const users = await readUsers();
     const user = users.find((u: any) => u.aadhaar === aadhaar && u.password === password);
     if (user) {
+        if (user.status === 'Deleted') {
+            return { success: false, message: 'Your account has been deleted. Please contact the owner.' };
+        }
         return { success: true, user };
     }
     return { success: false, message: 'Invalid Aadhaar or password.' };
