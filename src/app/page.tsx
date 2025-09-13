@@ -82,10 +82,11 @@ export default function LoginPage() {
     <main className="flex flex-1 items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="flex justify-center items-center mb-4">
-            <ShieldCheck className="h-10 w-10 text-primary" />
+          <div className="flex justify-center items-center space-x-3 mb-4">
+            <ShieldCheck className="h-12 w-12 text-primary" />
+            <span className="text-4xl font-bold">VoteX</span>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to VoteX</CardTitle>
+          <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
           <CardDescription>Please select your role to continue.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
