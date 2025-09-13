@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
+import { loginWorker, loginOwner } from './api/users/user-actions';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,38 +40,43 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleOwnerLogin = () => {
-    if (ownerId === 'owner42467' && ownerPassword === 'shailesh42467') {
-      localStorage.setItem('userRole', 'owner');
-      setUserRole('owner');
-      toast({ title: "Login Successful", description: "Welcome, Owner!" });
-      router.push('/owner-dashboard');
-      setOwnerLoginOpen(false);
-    } else {
-      toast({ title: "Login Failed", description: "Invalid ID or password.", variant: "destructive" });
+  const handleOwnerLogin = async () => {
+    try {
+      const result = await loginOwner(ownerId, ownerPassword);
+      if (result.success) {
+        localStorage.setItem('userRole', 'owner');
+        setUserRole('owner');
+        toast({ title: "Login Successful", description: "Welcome, Owner!" });
+        router.push('/owner-dashboard');
+        setOwnerLoginOpen(false);
+      } else {
+        toast({ title: "Login Failed", description: result.message, variant: "destructive" });
+      }
+    } catch(e) {
+      toast({ title: "Login Failed", description: "An unexpected error occurred.", variant: "destructive" });
     }
   };
 
-  const handleWorkerLogin = () => {
+  const handleWorkerLogin = async () => {
     if (!aadhaar || !password) {
       toast({ title: "Login Failed", description: "Please enter Aadhaar and password.", variant: "destructive" });
       return;
     }
-
-    const storedUsers = localStorage.getItem('appUsers');
-    const users = storedUsers ? JSON.parse(storedUsers) : [];
     
-    const foundUser = users.find((user: any) => user.aadhaar === aadhaar && user.password === password);
-
-    if (foundUser) {
-      localStorage.setItem('userRole', 'worker');
-      localStorage.setItem('loggedInUser', aadhaar); // Store logged in user's aadhaar
-      setUserRole('worker');
-      toast({ title: "Login Successful", description: `Welcome, ${foundUser.name}!` });
-      router.push('/data-entry');
-      setWorkerLoginOpen(false);
-    } else {
-      toast({ title: "Login Failed", description: "Invalid Aadhaar or password.", variant: "destructive" });
+    try {
+      const result = await loginWorker(aadhaar, password);
+      if (result.success && result.user) {
+          localStorage.setItem('userRole', 'worker');
+          localStorage.setItem('loggedInUser', aadhaar); // Store logged in user's aadhaar
+          setUserRole('worker');
+          toast({ title: "Login Successful", description: `Welcome, ${result.user.name}!` });
+          router.push('/data-entry');
+          setWorkerLoginOpen(false);
+      } else {
+          toast({ title: "Login Failed", description: result.message, variant: "destructive" });
+      }
+    } catch (e) {
+       toast({ title: "Login Failed", description: "An unexpected error occurred.", variant: "destructive" });
     }
   };
 

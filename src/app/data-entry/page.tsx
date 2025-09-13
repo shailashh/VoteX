@@ -3,7 +3,8 @@
 import DataEntryForm from '@/components/data-entry-form';
 import Header from '@/components/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { getUser } from '../api/users/user-actions';
 
 type User = {
   id: number;
@@ -16,18 +17,19 @@ type User = {
 export default function DataEntryPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
-    const storedUsers = localStorage.getItem('appUsers');
-
-    if (loggedInUserAadhaar && storedUsers) {
-      const users = JSON.parse(storedUsers);
-      const user = users.find((u: any) => u.aadhaar === loggedInUserAadhaar);
-      if (user) {
-        setCurrentUser(user);
-      }
+  const fetchCurrentUser = useCallback(async (aadhaar: string) => {
+    const user = await getUser(aadhaar);
+    if (user) {
+      setCurrentUser(user);
     }
   }, []);
+
+  useEffect(() => {
+    const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+    if (loggedInUserAadhaar) {
+      fetchCurrentUser(loggedInUserAadhaar);
+    }
+  }, [fetchCurrentUser]);
 
   return (
     <>

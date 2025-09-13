@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Send, AlertTriangle, User, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
+import { updateUserStatus, updateUserSubmissions, getUser } from '@/app/api/users/user-actions';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,20 +80,13 @@ export default function DataEntryForm() {
     mode: "onTouched"
   });
 
-  const updateUserStatus = (status: 'Active' | 'Inactive') => {
+  const handleUpdateUserStatus = async (status: 'Active' | 'Inactive') => {
     const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
     if (!loggedInUserAadhaar) return;
-
-    const storedUsers = localStorage.getItem('appUsers');
-    if (storedUsers) {
-      let users = JSON.parse(storedUsers);
-      const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
-      if (userIndex !== -1) {
-        if (users[userIndex].status !== status) {
-          users[userIndex].status = status;
-          localStorage.setItem('appUsers', JSON.stringify(users));
-        }
-      }
+    try {
+      await updateUserStatus(loggedInUserAadhaar, status);
+    } catch (error) {
+      console.error("Failed to update user status:", error);
     }
   };
 
@@ -124,13 +119,13 @@ export default function DataEntryForm() {
   
   useEffect(() => {
     if (locationError) {
-      updateUserStatus('Inactive');
+      handleUpdateUserStatus('Inactive');
       toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
     } else if (!isOnline) {
-      updateUserStatus('Inactive');
+      handleUpdateUserStatus('Inactive');
       toast({ title: 'Network Error', description: 'You are offline. Please check your internet connection.', variant: 'destructive' });
     } else {
-      updateUserStatus('Active');
+      handleUpdateUserStatus('Active');
     }
   }, [locationError, isOnline, toast]);
 
@@ -175,14 +170,12 @@ export default function DataEntryForm() {
       const googleCreds = localStorage.getItem('googleApiCredentials');
 
       let sheetId: string | undefined;
-      const storedUsers = localStorage.getItem('appUsers');
-
-      if (storedUsers && loggedInUserAadhaar) {
-        const users = JSON.parse(storedUsers);
-        const currentUser = users.find((u: any) => u.aadhaar === loggedInUserAadhaar);
-        if(currentUser && currentUser.sheet) {
-            sheetId = currentUser.sheet.id;
-        }
+      
+      if (loggedInUserAadhaar) {
+          const currentUser = await getUser(loggedInUserAadhaar);
+          if (currentUser && currentUser.sheet) {
+              sheetId = currentUser.sheet.id;
+          }
       }
 
       if (!sheetId) {
@@ -201,14 +194,8 @@ export default function DataEntryForm() {
       }); 
       
       if (result.status === 'success') {
-        const storedUsers = localStorage.getItem('appUsers');
-        if (storedUsers && loggedInUserAadhaar) {
-            let users = JSON.parse(storedUsers);
-            const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
-            if (userIndex !== -1) {
-                users[userIndex].submissions = (users[userIndex].submissions || 0) + 1;
-                localStorage.setItem('appUsers', JSON.stringify(users));
-            }
+        if (loggedInUserAadhaar) {
+          await updateUserSubmissions(loggedInUserAadhaar);
         }
         
         toast({
@@ -406,5 +393,3 @@ export default function DataEntryForm() {
     </>
   );
 }
-
-    

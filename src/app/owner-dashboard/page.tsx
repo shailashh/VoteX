@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import {
@@ -71,70 +71,15 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { createSheetForUser } from '../actions';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
+import {
+    getUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+    updateUserSubmissions,
+    updateUserSheet
+} from '../api/users/user-actions';
 
-const initialUsers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: 'JD',
-    sheet: {
-      name: 'User_Data_John_Doe',
-      id: '1BxiMVs0XRA5nFMdKvBd...',
-    },
-    status: 'Active',
-    aadhaar: '123456789012',
-    password: 'password123',
-    submissions: 25,
-  },
-  {
-    id: 2,
-    name: 'Sarah Johnson',
-    email: 'sarah.j@example.com',
-    avatar: 'SJ',
-    sheet: {
-      name: 'User_Data_Sarah_Johnson',
-      id: '1BxiMVs0XRA5nFMdKvBd...',
-    },
-    status: 'Active',
-    aadhaar: '234567890123',
-    password: 'password456',
-    submissions: 12,
-  },
-  {
-    id: 3,
-    name: 'Michael Chen',
-    email: 'm.chen@example.com',
-    avatar: 'MC',
-    sheet: null,
-    status: 'Inactive',
-    aadhaar: '345678901234',
-    password: 'password789',
-    submissions: 0,
-  },
-];
-
-const getUsersFromStorage = () => {
-  if (typeof window === 'undefined') return [];
-  const storedUsers = localStorage.getItem('appUsers');
-  if (storedUsers) {
-    try {
-        const parsedUsers = JSON.parse(storedUsers);
-        return parsedUsers.map((u: any) => ({ ...u, submissions: u.submissions || 0, status: u.status || 'Inactive' }));
-    } catch(e) {
-        localStorage.setItem('appUsers', JSON.stringify(initialUsers));
-        return initialUsers;
-    }
-  } else {
-    localStorage.setItem('appUsers', JSON.stringify(initialUsers));
-    return initialUsers;
-  }
-};
-
-const saveUsersToStorage = (users: any) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('appUsers', JSON.stringify(users));
-};
 
 export default function OwnerDashboard() {
   const router = useRouter();
@@ -151,22 +96,33 @@ export default function OwnerDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const allUsers = await getUsers();
+      setUsers(allUsers);
+    } catch (error) {
+      toast({ title: "Error fetching users", description: "Could not load user data.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     if (role !== 'owner') {
       router.push('/');
     } else {
-      setUsers(getUsersFromStorage());
-      setIsLoading(false);
+      fetchUsers();
     }
-  }, [router]);
+  }, [router, fetchUsers]);
 
   const handleGeneratePassword = () => {
     const password = Math.random().toString(36).slice(-8);
     setGeneratedPassword(password);
   };
   
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newAadhaar || newAadhaar.length !== 12 || !/^\d+$/.test(newAadhaar)) {
         toast({ title: "Validation Error", description: "Please enter a valid 12-digit Aadhaar number.", variant: "destructive" });
         return;
@@ -180,38 +136,38 @@ export default function OwnerDashboard() {
     const email = newUserEmail || `user${users.length + 1}@example.com`;
 
     const newUser = {
-      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
       name: name,
       email: email,
-      avatar: name.split(' ').map(n => n[0]).join(''),
-      sheet: null,
-      status: 'Inactive',
       aadhaar: newAadhaar,
       password: generatedPassword,
-      submissions: 0,
     };
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    saveUsersToStorage(updatedUsers);
 
-    toast({ title: "User Added", description: `User with Aadhaar ${newAadhaar} has been created.` });
+    try {
+        const addedUser = await addUser(newUser);
+        setUsers(prevUsers => [...prevUsers, addedUser]);
+        toast({ title: "User Added", description: `User with Aadhaar ${newAadhaar} has been created.` });
 
-    setAddUserOpen(false);
-    setGeneratedPassword("");
-    setNewAadhaar("");
-    setNewUserEmail("");
+        setAddUserOpen(false);
+        setGeneratedPassword("");
+        setNewAadhaar("");
+        setNewUserEmail("");
+    } catch(e) {
+        toast({ title: "Error", description: "Failed to add user.", variant: "destructive" });
+    }
   };
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!editingUser) return;
-
-    const updatedUsers = users.map(u => u.id === editingUser.id ? editingUser : u);
-    setUsers(updatedUsers);
-    saveUsersToStorage(updatedUsers);
-
-    toast({ title: "User Updated", description: `${editingUser.name}'s details have been updated.` });
-    setEditUserOpen(false);
-    setEditingUser(null);
+    
+    try {
+        const updated = await updateUser(editingUser.id, { name: editingUser.name, email: editingUser.email });
+        setUsers(users.map(u => u.id === editingUser.id ? updated : u));
+        toast({ title: "User Updated", description: `${editingUser.name}'s details have been updated.` });
+        setEditUserOpen(false);
+        setEditingUser(null);
+    } catch(e) {
+        toast({ title: "Error", description: "Failed to update user.", variant: "destructive" });
+    }
   };
 
   const openEditDialog = (user: any) => {
@@ -242,38 +198,52 @@ export default function OwnerDashboard() {
     const result = await createSheetForUser(user.name, user.email, masterSheetId, googleCreds);
 
     if (result.status === 'success' && result.sheetId) {
-        const updatedUsers = users.map(u => u.id === user.id ? { ...u, sheet: { id: result.sheetId, name: `User_Data_${user.name.replace(/\s/g, '_')}` } } : u);
-        setUsers(updatedUsers);
-        saveUsersToStorage(updatedUsers);
-        toast({ title: "Sheet Created", description: `Sheet for ${user.name} created successfully.` });
+        const sheetData = { id: result.sheetId, name: `User_Data_${user.name.replace(/\s/g, '_')}` };
+        try {
+            await updateUserSheet(user.id, sheetData);
+            setUsers(users.map(u => u.id === user.id ? { ...u, sheet: sheetData } : u));
+            toast({ title: "Sheet Created", description: `Sheet for ${user.name} created successfully.` });
+        } catch(e) {
+             toast({ title: "Error", description: "Failed to save sheet details to user.", variant: 'destructive' });
+        }
     } else {
         toast({ title: "Error", description: result.message, variant: 'destructive' });
     }
     setIsCreatingSheet(null);
   };
   
-  const handleDeleteUser = (userId: number) => {
-    const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, status: 'Deleted' } : user
-    );
-    setUsers(updatedUsers);
-    saveUsersToStorage(updatedUsers);
-    toast({ title: "User Deleted", description: "The user has been moved to the deleted section." });
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      await deleteUser(userId);
+      const updatedUsers = users.map(user => 
+        user.id === userId ? { ...user, status: 'Deleted' } : user
+      );
+      setUsers(updatedUsers);
+      toast({ title: "User Deleted", description: "The user has been moved to the deleted section." });
+    } catch(e) {
+       toast({ title: "Error", description: "Failed to delete user.", variant: 'destructive' });
+    }
   };
 
-  const handleRecoverUser = (userId: number) => {
-    const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, status: 'Inactive' } : user
-    );
-    setUsers(updatedUsers);
-    saveUsersToStorage(updatedUsers);
-    toast({ title: "User Recovered", description: "The user has been restored to the main list." });
+  const handleRecoverUser = async (userId: number) => {
+    try {
+        const updated = await updateUser(userId, { status: 'Inactive' });
+        const updatedUsers = users.map(user => 
+          user.id === userId ? updated : user
+        );
+        setUsers(updatedUsers);
+        toast({ title: "User Recovered", description: "The user has been restored to the main list." });
+    } catch(e) {
+        toast({ title: "Error", description: "Failed to recover user.", variant: 'destructive' });
+    }
   };
   
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = user.name?.toLowerCase().includes(searchLower) ||
+                            user.email?.toLowerCase().includes(searchLower) ||
+                            user.aadhaar?.includes(searchTerm);
       const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -434,7 +404,7 @@ export default function OwnerDashboard() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar>
-                                <AvatarFallback>{user.avatar}</AvatarFallback>
+                                <AvatarFallback>{user.avatar || user.name?.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-medium">{user.name}</div>
@@ -544,7 +514,7 @@ export default function OwnerDashboard() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarFallback>{user.avatar}</AvatarFallback>
+                              <AvatarFallback>{user.avatar || user.name?.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium">{user.name}</div>
@@ -604,5 +574,3 @@ export default function OwnerDashboard() {
     </>
   );
 }
-
-    

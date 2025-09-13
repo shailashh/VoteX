@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/sheet';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { updateUserStatus } from '@/app/api/users/user-actions';
 
 export default function Header() {
   const pathname = usePathname();
@@ -23,19 +24,13 @@ export default function Header() {
     setUserRole(role);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
     if (loggedInUserAadhaar) {
-      const storedUsers = localStorage.getItem('appUsers');
-      if (storedUsers) {
-        let users = JSON.parse(storedUsers);
-        const userIndex = users.findIndex(
-          (u: any) => u.aadhaar === loggedInUserAadhaar
-        );
-        if (userIndex !== -1) {
-          users[userIndex].status = 'Inactive';
-          localStorage.setItem('appUsers', JSON.stringify(users));
-        }
+      try {
+        await updateUserStatus(loggedInUserAadhaar, 'Inactive');
+      } catch (error) {
+        console.error("Failed to update user status on logout:", error);
       }
     }
     localStorage.removeItem('userRole');
@@ -50,7 +45,7 @@ export default function Header() {
   const canViewDashboard = userRole === 'owner';
 
   const navLinks = [
-    { href: '/data-entry', label: 'Data Entry', icon: User, show: true },
+    { href: '/data-entry', label: 'Data Entry', icon: User, show: userRole === 'worker' },
     {
       href: '/owner-dashboard',
       label: 'Owner Dashboard',
@@ -70,7 +65,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href={userRole === 'owner' ? '/owner-dashboard' : '/data-entry'} className="flex items-center space-x-2">
               <ShieldCheck className="h-7 w-7 text-primary" />
               <span className="font-bold text-xl">VoteX</span>
             </Link>
