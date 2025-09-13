@@ -20,7 +20,6 @@ import { CameraCapture } from '@/components/camera-capture';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { useLocation, type Location } from '@/hooks/use-location';
-import { VotexLogo } from './ui/votex-logo';
 import { ShieldCheck } from 'lucide-react';
 
 const formSchema = z.object({
@@ -73,7 +72,7 @@ export default function DataEntryForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
-      age: undefined,
+      age: '' as any,
       address: '',
       photo: '',
     },
@@ -147,7 +146,7 @@ export default function DataEntryForm() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(step => step - 1);
+      setCurrentStep(step => step + 1);
     }
   };
 
@@ -242,7 +241,7 @@ export default function DataEntryForm() {
                       <Input placeholder="Enter your full name" {...field} />
                     </FormControl>
                     <FormDescription className="flex items-center gap-2">
-                      <VotexLogo className="w-3 h-3 text-muted-foreground" />
+                      <ShieldCheck className="w-3 h-3 text-muted-foreground" />
                       Enter your legal name as it appears on official documents
                     </FormDescription>
                     <FormMessage />
