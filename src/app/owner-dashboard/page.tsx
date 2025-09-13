@@ -45,7 +45,8 @@ import {
   Loader2,
   AlertTriangle,
   RotateCcw,
-  Users
+  Users,
+  Shield
 } from 'lucide-react';
 import {
   Dialog,
@@ -367,7 +368,7 @@ export default function OwnerDashboard() {
                       </div>
                       <DialogFooter>
                         <Button type="button" onClick={handleAddUser}>
-                            <VotexLogo className="mr-2 h-4 w-4" />
+                            <Shield className="mr-2 h-4 w-4" />
                             Save User
                         </Button>
                       </DialogFooter>
