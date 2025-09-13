@@ -12,6 +12,7 @@ const fontSans = FontSans({
 export const metadata: Metadata = {
   title: 'VoteX',
   description: 'A data entry application for seamless information collection.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -21,6 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+      </head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
