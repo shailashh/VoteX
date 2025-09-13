@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, RefreshCcw, Check, VideoOff, SwitchCamera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,12 +19,18 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
-  const startCamera = async (mode: 'user' | 'environment') => {
-    // Stop any existing stream before starting a new one
+  const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      if(videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
-    
+  }, [stream]);
+
+  const startCamera = useCallback(async (mode: 'user' | 'environment') => {
+    stopCamera();
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
       if (videoRef.current) {
@@ -37,23 +43,13 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       let errorMessage = "Could not access camera. Please check permissions and try again.";
       if ((err as Error).name === 'NotAllowedError') {
         errorMessage = "Camera access was denied. Please enable it in your browser settings.";
-      } else if ((err as Error).name === 'NotFoundError') {
+      } else if ((err as Error).name === 'NotFoundError' || (err as Error).name === 'OverconstrainedError') {
         errorMessage = `The ${mode === 'user' ? 'front' : 'rear'} camera could not be found on this device.`;
       }
       setError(errorMessage);
       setStream(null);
     }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-      if(videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    }
-  };
+  }, [stopCamera]);
 
   useEffect(() => {
     if (!photo) {
@@ -62,14 +58,10 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       stopCamera();
     }
     
-    // Cleanup function to stop camera when component unmounts or photo is set
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo, facingMode]);
+  }, [photo, facingMode, startCamera, stopCamera]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -79,7 +71,6 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        // Flip the image horizontally if it's from the front camera
         if (facingMode === 'user') {
           context.translate(video.videoWidth, 0);
           context.scale(-1, 1);
@@ -114,7 +105,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
                 className="absolute bottom-2 right-2 rounded-full h-10 w-10 bg-black/50 hover:bg-black/70 border-none text-white"
                 onClick={handleSwitchCamera}
                 type="button"
-                disabled={!stream}
+                disabled={!navigator.mediaDevices?.enumerateDevices}
               >
                 <SwitchCamera className="h-5 w-5" />
               </Button>
