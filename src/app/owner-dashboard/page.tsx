@@ -90,6 +90,7 @@ export default function OwnerDashboard() {
   const [isEditUserOpen, setEditUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [generatedPassword, setGeneratedPassword] = useState("");
+  const [newUserName, setNewUserName] = useState("");
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
@@ -97,11 +98,13 @@ export default function OwnerDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
     try {
       const allUsers = await getUsers();
       setUsers(allUsers);
     } catch (error) {
-      toast({ title: "Error fetching users", description: "Could not load user data.", variant: "destructive" });
+      console.error("Data fetching error:", error);
+      toast({ title: "Data fetching error", description: "Could not load user data. Please try again.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +126,10 @@ export default function OwnerDashboard() {
   };
   
   const handleAddUser = async () => {
+    if (!newUserName.trim()) {
+        toast({ title: "Validation Error", description: "Please enter the user's name.", variant: "destructive" });
+        return;
+    }
     if (!newAadhaar || newAadhaar.length !== 12 || !/^\d+$/.test(newAadhaar)) {
         toast({ title: "Validation Error", description: "Please enter a valid 12-digit Aadhaar number.", variant: "destructive" });
         return;
@@ -132,11 +139,10 @@ export default function OwnerDashboard() {
         return;
     }
 
-    const name = `User ${users.length + 1}`;
     const email = newUserEmail || `user${users.length + 1}@example.com`;
 
     const newUser = {
-      name: name,
+      name: newUserName,
       email: email,
       aadhaar: newAadhaar,
       password: generatedPassword,
@@ -145,12 +151,13 @@ export default function OwnerDashboard() {
     try {
         const addedUser = await addUser(newUser);
         setUsers(prevUsers => [...prevUsers, addedUser]);
-        toast({ title: "User Added", description: `User with Aadhaar ${newAadhaar} has been created.` });
+        toast({ title: "User Added", description: `${newUserName} has been created.` });
 
         setAddUserOpen(false);
         setGeneratedPassword("");
         setNewAadhaar("");
         setNewUserEmail("");
+        setNewUserName("");
     } catch(e) {
         toast({ title: "Error", description: "Failed to add user.", variant: "destructive" });
     }
@@ -339,6 +346,10 @@ export default function OwnerDashboard() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="name" className="text-right">Name</Label>
+                          <Input id="name" value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Full Name" className="col-span-3" />
+                        </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="email" className="text-right">Email</Label>
                           <Input id="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="user@example.com" className="col-span-3" />
@@ -574,3 +585,5 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
