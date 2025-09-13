@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import {
   Table,
@@ -44,6 +45,8 @@ import {
   Copy,
   Loader2,
   AlertTriangle,
+  RotateCcw,
+  Users
 } from 'lucide-react';
 import {
   Dialog,
@@ -119,8 +122,8 @@ const getUsersFromStorage = () => {
   if (storedUsers) {
     try {
         const parsedUsers = JSON.parse(storedUsers);
-        // Ensure all users have a submissions count
-        return parsedUsers.map((u: any) => ({ ...u, submissions: u.submissions || 0 }));
+        // Ensure all users have required fields
+        return parsedUsers.map((u: any) => ({ ...u, submissions: u.submissions || 0, status: u.status || 'Inactive' }));
     } catch(e) {
         localStorage.setItem('appUsers', JSON.stringify(initialUsers));
         return initialUsers;
@@ -146,8 +149,6 @@ export default function OwnerDashboard() {
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
-  const [userToDelete, setUserToDelete] = useState<any | null>(null);
-
 
   const handleGeneratePassword = () => {
     const password = Math.random().toString(36).slice(-8);
@@ -224,11 +225,21 @@ export default function OwnerDashboard() {
   };
   
   const handleDeleteUser = (userId: number) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
+    const updatedUsers = users.map(user => 
+      user.id === userId ? { ...user, status: 'Deleted' } : user
+    );
     setUsers(updatedUsers);
     saveUsersToStorage(updatedUsers);
-    toast({ title: "User Deleted", description: "The user has been removed." });
-    setUserToDelete(null);
+    toast({ title: "User Deleted", description: "The user has been moved to the deleted section." });
+  };
+
+  const handleRecoverUser = (userId: number) => {
+    const updatedUsers = users.map(user => 
+      user.id === userId ? { ...user, status: 'Inactive' } : user
+    );
+    setUsers(updatedUsers);
+    saveUsersToStorage(updatedUsers);
+    toast({ title: "User Recovered", description: "The user has been restored to the main list." });
   };
 
 
@@ -249,6 +260,10 @@ export default function OwnerDashboard() {
     return <FullPageLoader />;
   }
 
+  const activeUsers = users.filter(u => u.status !== 'Deleted');
+  const deletedUsers = users.filter(u => u.status === 'Deleted');
+  const totalSubmissions = users.reduce((acc, user) => acc + (user.submissions || 0), 0);
+
   return (
     <>
       <Header />
@@ -263,7 +278,7 @@ export default function OwnerDashboard() {
                 <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.filter(u => u.sheet).length}</div>
+                <div className="text-2xl font-bold">{users.filter(u => u.sheet && u.status !== 'Deleted').length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -274,7 +289,7 @@ export default function OwnerDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.reduce((acc, user) => acc + (user.submissions || 0), 0)}</div>
+                <div className="text-2xl font-bold">{totalSubmissions}</div>
               </CardContent>
             </Card>
              <Card>
@@ -285,12 +300,12 @@ export default function OwnerDashboard() {
                 <UserPlus className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
+                <div className="text-2xl font-bold">{activeUsers.length}</div>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="mb-8">
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <CardTitle>User Management</CardTitle>
@@ -370,7 +385,7 @@ export default function OwnerDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {activeUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -441,8 +456,7 @@ export default function OwnerDashboard() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the user
-                                  and their associated data.
+                                  This will move the user to the deleted section. They can be recovered later.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -461,6 +475,60 @@ export default function OwnerDashboard() {
               </Table>
             </CardContent>
           </Card>
+          
+          {deletedUsers.length > 0 && (
+             <Card className="mt-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Deleted Users
+                </CardTitle>
+                <CardDescription>
+                  These users have been deleted. You can recover them at any time.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Submissions</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deletedUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>{user.avatar}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-center">{user.submissions}</div>
+                        </TableCell>
+                        <TableCell>
+                           <Button variant="outline" size="sm" onClick={() => handleRecoverUser(user.id)}>
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Recover
+                            </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </main>
     </>
