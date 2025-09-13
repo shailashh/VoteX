@@ -10,11 +10,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { FullPageLoader } from '@/components/ui/loading-spinner';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isWorkerLoginOpen, setWorkerLoginOpen] = useState(false);
   const [isOwnerLoginOpen, setOwnerLoginOpen] = useState(false);
   const [aadhaar, setAadhaar] = useState('');
@@ -32,6 +34,8 @@ export default function LoginPage() {
       } else {
         router.push('/data-entry');
       }
+    } else {
+      setIsLoading(false);
     }
   }, [router]);
 
@@ -70,9 +74,8 @@ export default function LoginPage() {
     }
   };
 
-  if (userRole) {
-    // Render a loading state or null while redirecting
-    return null;
+  if (isLoading || userRole) {
+    return <FullPageLoader />;
   }
 
   return (
@@ -195,4 +198,3 @@ export default function LoginPage() {
     </main>
   );
 }
-    

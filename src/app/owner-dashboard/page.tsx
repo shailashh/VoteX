@@ -44,7 +44,6 @@ import {
   Copy,
   Loader2,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +56,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { createSheetForUser } from '../actions';
+import { FullPageLoader } from '@/components/ui/loading-spinner';
 
 const initialUsers = [
   {
@@ -225,21 +225,7 @@ export default function OwnerDashboard() {
   }, []);
 
   if (!isAuthorized) {
-    return (
-       <div className="flex min-h-screen w-full flex-col bg-gray-50/90">
-         <Header />
-         <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
-           <div className="w-full max-w-6xl mx-auto">
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-                <Skeleton className="h-24" />
-                <Skeleton className="h-24" />
-                <Skeleton className="h-24" />
-             </div>
-             <Skeleton className="h-[400px]" />
-           </div>
-         </main>
-       </div>
-    );
+    return <FullPageLoader />;
   }
 
   return (
