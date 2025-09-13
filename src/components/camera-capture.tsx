@@ -15,31 +15,31 @@ interface CameraCaptureProps {
 export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [isCameraInitializing, setIsCameraInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
       if(videoRef.current) {
         videoRef.current.srcObject = null;
       }
     }
-  }, [stream]);
+  }, []);
 
   const startCamera = useCallback(async () => {
-    // Make sure to stop any existing stream before starting a new one.
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
+    stopCamera(); // Stop any existing stream first
+    setIsCameraInitializing(true);
+    setError(null);
   
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      streamRef.current = mediaStream;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-      setStream(mediaStream);
       setError(null);
     } catch (err) {
       console.error("Error accessing camera:", err);
@@ -50,9 +50,11 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
         errorMessage = `The rear camera could not be found on this device.`;
       }
       setError(errorMessage);
-      setStream(null);
+      streamRef.current = null;
+    } finally {
+        setIsCameraInitializing(false);
     }
-  }, [stream]);
+  }, [stopCamera]);
 
   useEffect(() => {
     if (!photo) {
@@ -61,12 +63,10 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       stopCamera();
     }
     
-    // Cleanup function to stop the camera when the component unmounts or photo is taken
     return () => {
       stopCamera();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo]);
+  }, [photo, startCamera, stopCamera]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -95,7 +95,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
         ) : (
           <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" />
         )}
-        {!photo && !stream && !error && (
+        {!photo && isCameraInitializing && !error && (
             <div className="absolute inset-0 flex items-center justify-center flex-col text-muted-foreground">
                 <Camera className="h-12 w-12 mb-2" />
                 <p>Starting camera...</p>
@@ -123,7 +123,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
             </Button>
           </>
         ) : (
-          <Button type="button" onClick={handleCapture} disabled={!stream}>
+          <Button type="button" onClick={handleCapture} disabled={isCameraInitializing || !!error}>
             <Camera className="mr-2 h-4 w-4" /> Capture Photo
           </Button>
         )}
