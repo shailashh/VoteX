@@ -1,16 +1,4 @@
-[
-  {
-    "id": 1,
-    "name": "User 1",
-    "email": "shailesh42456@gmail.com",
-    "aadhaar": "123456789012",
-    "password": "j7lru39v",
-    "avatar": "U1",
-    "sheet": null,
-    "status": "Inactive",
-    "submissions": 0
-  },
-  {
+{
     "id": 2,
     "name": "shailesh",
     "email": "jagatpaswan1111@gmail.com",
