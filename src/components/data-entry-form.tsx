@@ -21,18 +21,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { useLocation, type Location } from '@/hooks/use-location';
 import { ShieldCheck } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  dob: z.date({
-    required_error: "Date of birth is required.",
-  }).refine((date) => {
-    const today = new Date();
-    const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-    return date <= eighteenYearsAgo;
+  dob: z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+    message: "Invalid date format. Use YYYY-MM-DD.",
+  }).refine((val) => {
+      const date = new Date(val);
+      const today = new Date();
+      const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+      return date <= eighteenYearsAgo;
   }, { message: "You must be at least 18 years old." }),
   address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
   photo: z.string().min(1, 'A photo is required.'),
@@ -81,6 +79,7 @@ export default function DataEntryForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
+      dob: '',
       address: '',
       photo: '',
     },
@@ -194,6 +193,7 @@ export default function DataEntryForm() {
 
       const result = await submitForm({ 
         ...data, 
+        dob: new Date(data.dob),
         location, 
         user: loggedInUserAadhaar || 'Unknown User',
         sheetId,
@@ -260,39 +260,14 @@ export default function DataEntryForm() {
                 control={form.control}
                 name="dob"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Date of Birth *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input placeholder="YYYY-MM-DD" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Please use the YYYY-MM-DD format.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -350,7 +325,7 @@ export default function DataEntryForm() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Date of Birth</h3>
-                  <p>{watchedValues.dob ? format(watchedValues.dob, "PPP") : 'N/A'}</p>
+                  <p>{watchedValues.dob ? format(new Date(watchedValues.dob), "PPP") : 'N/A'}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold">Address</h3>
@@ -430,3 +405,5 @@ export default function DataEntryForm() {
     </>
   );
 }
+
+    
