@@ -45,7 +45,8 @@ import {
   RotateCcw,
   Users,
   Shield,
-  ShieldCheck
+  ShieldCheck,
+  Phone
 } from 'lucide-react';
 import {
   Dialog,
@@ -93,6 +94,7 @@ export default function OwnerDashboard() {
   const [newUserName, setNewUserName] = useState("");
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPhone, setNewUserPhone] = useState("");
   const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -134,6 +136,10 @@ export default function OwnerDashboard() {
         toast({ title: "Validation Error", description: "Please enter a valid 12-digit Aadhaar number.", variant: "destructive" });
         return;
     }
+    if (!newUserPhone || newUserPhone.length !== 10 || !/^\d+$/.test(newUserPhone)) {
+        toast({ title: "Validation Error", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+        return;
+    }
     if (!generatedPassword) {
         toast({ title: "Validation Error", description: "Please generate a password for the user.", variant: "destructive" });
         return;
@@ -145,6 +151,7 @@ export default function OwnerDashboard() {
       name: newUserName,
       email: email,
       aadhaar: newAadhaar,
+      phone: newUserPhone,
       password: generatedPassword,
     };
 
@@ -158,6 +165,7 @@ export default function OwnerDashboard() {
         setNewAadhaar("");
         setNewUserEmail("");
         setNewUserName("");
+        setNewUserPhone("");
     } catch(e) {
         toast({ title: "Error", description: "Failed to add user.", variant: "destructive" });
     }
@@ -167,7 +175,7 @@ export default function OwnerDashboard() {
     if (!editingUser) return;
     
     try {
-        const updated = await updateUser(editingUser.id, { name: editingUser.name, email: editingUser.email });
+        const updated = await updateUser(editingUser.id, { name: editingUser.name, email: editingUser.email, phone: editingUser.phone });
         setUsers(users.map(u => u.id === editingUser.id ? updated : u));
         toast({ title: "User Updated", description: `${editingUser.name}'s details have been updated.` });
         setEditUserOpen(false);
@@ -250,6 +258,7 @@ export default function OwnerDashboard() {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = user.name?.toLowerCase().includes(searchLower) ||
                             user.email?.toLowerCase().includes(searchLower) ||
+                            user.phone?.includes(searchTerm) ||
                             user.aadhaar?.includes(searchTerm);
       const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
       return matchesSearch && matchesStatus;
@@ -352,11 +361,15 @@ export default function OwnerDashboard() {
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="email" className="text-right">Email</Label>
-                          <Input id="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="user@example.com" className="col-span-3" />
+                          <Input id="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="user@example.com (Optional)" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="aadhar" className="text-right">Aadhaar No.</Label>
                           <Input id="aadhar" value={newAadhaar} onChange={e => setNewAadhaar(e.target.value)} placeholder="XXXX XXXX XXXX" className="col-span-3" maxLength={12}/>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="phone" className="text-right">Phone No.</Label>
+                          <Input id="phone" value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="10-digit number" className="col-span-3" maxLength={10}/>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                            <Label htmlFor="password" className="text-right">Password</Label>
@@ -373,7 +386,7 @@ export default function OwnerDashboard() {
                       </div>
                       <DialogFooter>
                         <Button type="button" onClick={handleAddUser}>
-                            <Shield className="mr-2 h-4 w-4" />
+                            <ShieldCheck className="mr-2 h-4 w-4" />
                             Save User
                         </Button>
                       </DialogFooter>
@@ -422,6 +435,12 @@ export default function OwnerDashboard() {
                                 <div className="text-sm text-muted-foreground">
                                   {user.email}
                                 </div>
+                                {user.phone && (
+                                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {user.phone}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -573,6 +592,10 @@ export default function OwnerDashboard() {
                 <Label htmlFor="edit-email" className="text-right">Email</Label>
                 <Input id="edit-email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="col-span-3" />
               </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-phone" className="text-right">Phone No.</Label>
+                <Input id="edit-phone" value={editingUser.phone} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} className="col-span-3" />
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -585,5 +608,3 @@ export default function OwnerDashboard() {
     </>
   );
 }
-
-    
