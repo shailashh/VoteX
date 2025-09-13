@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, RefreshCcw, Check, VideoOff, SwitchCamera } from 'lucide-react';
+import { Camera, RefreshCcw, Check, VideoOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,7 +17,6 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -29,10 +28,10 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
     }
   }, [stream]);
 
-  const startCamera = useCallback(async (mode: 'user' | 'environment') => {
+  const startCamera = useCallback(async () => {
     stopCamera();
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
@@ -44,7 +43,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       if ((err as Error).name === 'NotAllowedError') {
         errorMessage = "Camera access was denied. Please enable it in your browser settings.";
       } else if ((err as Error).name === 'NotFoundError' || (err as Error).name === 'OverconstrainedError') {
-        errorMessage = `The ${mode === 'user' ? 'front' : 'rear'} camera could not be found on this device.`;
+        errorMessage = `The rear camera could not be found on this device.`;
       }
       setError(errorMessage);
       setStream(null);
@@ -53,7 +52,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
 
   useEffect(() => {
     if (!photo) {
-      startCamera(facingMode);
+      startCamera();
     } else {
       stopCamera();
     }
@@ -61,7 +60,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
     return () => {
       stopCamera();
     };
-  }, [photo, facingMode, startCamera, stopCamera]);
+  }, [photo, startCamera, stopCamera]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -71,10 +70,6 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        if (facingMode === 'user') {
-          context.translate(video.videoWidth, 0);
-          context.scale(-1, 1);
-        }
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const dataUrl = canvas.toDataURL('image/jpeg');
         onCapture(dataUrl);
@@ -86,31 +81,13 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
     onCapture('');
   };
 
-  const handleSwitchCamera = () => {
-    setFacingMode(prevMode => prevMode === 'user' ? 'environment' : 'user');
-  };
-
   return (
     <div className="flex flex-col items-center gap-4">
       <Card className="relative w-full max-w-md aspect-video overflow-hidden rounded-lg shadow-inner bg-muted">
         {photo ? (
           <Image src={photo} alt="Captured photo" fill className="object-cover" />
         ) : (
-          <>
-            <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)' }} />
-            {!photo && (
-              <Button
-                size="icon"
-                variant="outline"
-                className="absolute bottom-2 right-2 rounded-full h-10 w-10 bg-black/50 hover:bg-black/70 border-none text-white"
-                onClick={handleSwitchCamera}
-                type="button"
-                disabled={!navigator.mediaDevices?.enumerateDevices}
-              >
-                <SwitchCamera className="h-5 w-5" />
-              </Button>
-            )}
-          </>
+          <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" />
         )}
         {!photo && !stream && !error && (
             <div className="absolute inset-0 flex items-center justify-center flex-col text-muted-foreground">
@@ -132,7 +109,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       <div className="flex gap-4">
         {photo ? (
           <>
-            <Button variant="outline" onClick={handleRetake}>
+            <Button variant="outline" onClick={handleRetake} type="button">
               <RefreshCcw className="mr-2 h-4 w-4" /> Retake
             </Button>
             <Button variant="secondary" disabled>
