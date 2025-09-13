@@ -42,6 +42,7 @@ import {
   UserPlus,
   KeyRound,
   Shield,
+  Copy,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -54,6 +55,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 
 const initialUsers = [
@@ -67,6 +69,8 @@ const initialUsers = [
       id: '1BxiMVs0XRA5nFMdKvBd...',
     },
     status: 'Active',
+    aadhaar: '123456789012',
+    password: 'password123',
   },
   {
     id: 2,
@@ -78,6 +82,8 @@ const initialUsers = [
       id: '1BxiMVs0XRA5nFMdKvBd...',
     },
     status: 'Active',
+    aadhaar: '234567890123',
+    password: 'password456',
   },
   {
     id: 3,
@@ -86,15 +92,38 @@ const initialUsers = [
     avatar: 'MC',
     sheet: null,
     status: 'Inactive',
+    aadhaar: '345678901234',
+    password: 'password789',
   },
 ];
 
+// Mock database in localStorage
+const getUsersFromStorage = () => {
+  if (typeof window === 'undefined') return initialUsers;
+  const storedUsers = localStorage.getItem('appUsers');
+  if (storedUsers) {
+    return JSON.parse(storedUsers);
+  } else {
+    localStorage.setItem('appUsers', JSON.stringify(initialUsers));
+    return initialUsers;
+  }
+};
+
+const saveUsersToStorage = (users: any) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('appUsers', JSON.stringify(users));
+};
+
 export default function OwnerDashboard() {
   const router = useRouter();
+  const { toast } = useToast();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState(getUsersFromStorage);
   const [isAddUserOpen, setAddUserOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
+  const [newAadhaar, setNewAadhaar] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+
 
   const handleGeneratePassword = () => {
     const password = Math.random().toString(36).slice(-8);
@@ -102,30 +131,57 @@ export default function OwnerDashboard() {
   };
   
   const handleAddUser = () => {
-    // This is a mock implementation. In a real app, you would
-    // validate the form data and make an API call.
+    if (!newAadhaar || newAadhaar.length !== 12 || !/^\d+$/.test(newAadhaar)) {
+        toast({ title: "Validation Error", description: "Please enter a valid 12-digit Aadhaar number.", variant: "destructive" });
+        return;
+    }
+    if (!generatedPassword) {
+        toast({ title: "Validation Error", description: "Please generate a password for the user.", variant: "destructive" });
+        return;
+    }
+
+    const name = `User ${users.length + 1}`;
+    const email = newUserEmail || `user${users.length + 1}@example.com`;
+
     const newUser = {
       id: users.length + 1,
-      name: 'New User', // Replace with form data
-      email: 'new.user@example.com', // Replace with form data
-      avatar: 'NU',
+      name: name,
+      email: email,
+      avatar: name.split(' ').map(n => n[0]).join(''),
       sheet: null,
       status: 'Inactive',
+      aadhaar: newAadhaar,
+      password: generatedPassword,
     };
-    setUsers([...users, newUser]);
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    saveUsersToStorage(updatedUsers);
+
+    toast({ title: "User Added", description: `User with Aadhaar ${newAadhaar} has been created.` });
+
     setAddUserOpen(false);
     setGeneratedPassword("");
+    setNewAadhaar("");
+    setNewUserEmail("");
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Password copied to clipboard." });
+  }
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     if (role !== 'owner') {
-      router.push('/data-entry');
+      router.push('/');
     } else {
       setIsAuthorized(true);
     }
   }, [router]);
+  
+  useEffect(() => {
+    setUsers(getUsersFromStorage());
+  }, []);
 
   if (!isAuthorized) {
     return (
@@ -160,7 +216,7 @@ export default function OwnerDashboard() {
                 <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2</div>
+                <div className="text-2xl font-bold">{users.filter(u => u.sheet).length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -235,15 +291,12 @@ export default function OwnerDashboard() {
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="aadhar" className="text-right">Aadhaar No.</Label>
-                          <Input id="aadhar" placeholder="XXXX XXXX XXXX" className="col-span-3" />
+                          <Label htmlFor="email" className="text-right">Email</Label>
+                          <Input id="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="user@example.com" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="otp" className="text-right">OTP</Label>
-                          <div className="col-span-3 flex gap-2">
-                            <Input id="otp" placeholder="6-digit OTP" />
-                            <Button variant="outline">Send OTP</Button>
-                          </div>
+                          <Label htmlFor="aadhar" className="text-right">Aadhaar No.</Label>
+                          <Input id="aadhar" value={newAadhaar} onChange={e => setNewAadhaar(e.target.value)} placeholder="XXXX XXXX XXXX" className="col-span-3" maxLength={12}/>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                            <Label htmlFor="password" className="text-right">Password</Label>
@@ -251,6 +304,9 @@ export default function OwnerDashboard() {
                             <Input id="password" value={generatedPassword} readOnly placeholder="Click to generate" />
                              <Button variant="secondary" onClick={handleGeneratePassword}>
                                <KeyRound className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}>
+                               <Copy className="h-4 w-4" />
                             </Button>
                            </div>
                         </div>
@@ -348,3 +404,5 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
