@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Send, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
 import { updateUserStatus, updateUserSubmissions, getUser } from '@/app/api/users/user-actions';
@@ -177,7 +177,10 @@ export default function DataEntryForm() {
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Enter legal name as per document
+              </FormLabel>
               <FormControl><Input placeholder="Enter full name" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
