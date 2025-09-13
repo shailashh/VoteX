@@ -446,6 +446,12 @@ export default function OwnerDashboard() {
                                     {user.phone}
                                   </div>
                                 )}
+                                {user.aadhaar && (
+                                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Shield className="h-3 w-3" />
+                                    {user.aadhaar}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -613,5 +619,7 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
 
     
