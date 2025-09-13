@@ -3,21 +3,34 @@
 import { z } from 'zod';
 import { google } from 'googleapis';
 
-const formSchema = z.object({
-  user: z.string().min(1, 'User selection is required.'),
+const baseSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
-  dob: z.coerce.date(),
+  mobile: z.string().length(10, 'Mobile number must be 10 digits.'),
   address: z.string().min(10, 'Address must be at least 10 characters.'),
-  photo: z.string().optional(),
-  location: z
-    .object({
-      latitude: z.number(),
-      longitude: z.number(),
-    })
-    .optional(),
-  sheetId: z.string().optional(),
-  googleCreds: z.string().optional(),
+  documentPhotoFront: z.string().min(1, 'Front document photo is required.'),
+  documentPhotoBack: z.string().min(1, 'Back document photo is required.'),
 });
+
+const formSchema = z.discriminatedUnion('voterType', [
+  baseSchema.extend({
+    voterType: z.literal('Existing Voter'),
+    rspNo: z.string().min(1, 'RSP No is required.'),
+  }),
+  baseSchema.extend({
+    voterType: z.literal('Other State Voter'),
+    rspNo: z.string().min(1, 'RSP No is required.'),
+  }),
+  baseSchema.extend({
+    voterType: z.literal('No Voter 18+'),
+    rspNo: z.string().optional(), // Not present for this type
+  }),
+  baseSchema.extend({
+    voterType: z.literal('Voter Issue'),
+    reason: z.string().min(5, 'Reason must be at least 5 characters.'),
+    rspNo: z.string().optional(), // Not present for this type
+  }),
+]);
+
 
 type FormState = {
   message: string;
@@ -36,43 +49,41 @@ async function getGoogleSheetsClient(creds: string) {
     return google.sheets({ version: 'v4', auth });
 }
 
-function calculateAge(dob: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const monthDifference = today.getMonth() - dob.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
-        age--;
-    }
-    return age;
-}
 
 export async function submitForm(
-  data: z.infer<typeof formSchema>
+  data: any,
+  sheetId: string | null,
+  googleCreds: string | null,
+  userAadhaar: string | null,
+  location: { latitude: number, longitude: number } | null
 ): Promise<FormState> {
   const validatedFields = formSchema.safeParse(data);
 
   if (!validatedFields.success) {
     console.error('Validation failed:', validatedFields.error.flatten().fieldErrors);
     return {
-      message: 'Invalid data provided.',
+      message: 'Invalid data provided. Please check all fields.',
       status: 'error',
     };
   }
   
-  const { sheetId, googleCreds, dob, ...formData } = validatedFields.data;
-  const age = calculateAge(dob);
+  const formData = validatedFields.data;
 
   console.log('--- New Form Submission ---');
-  console.log('User:', formData.user);
+  console.log('Voter Type:', formData.voterType);
   console.log('Full Name:', formData.fullName);
-  console.log('Date of Birth:', dob.toLocaleDateString());
-  console.log('Calculated Age:', age);
+  console.log('Mobile:', formData.mobile);
   console.log('Address:', formData.address);
-  console.log(
-    'Photo captured:',
-    formData.photo ? 'Yes' : 'No'
-  );
-  console.log('Location:', formData.location);
+  if ('rspNo' in formData && formData.rspNo) {
+      console.log('RSP No:', formData.rspNo);
+  }
+  if ('reason' in formData && formData.reason) {
+      console.log('Reason:', formData.reason);
+  }
+  console.log('Front Photo captured:', !!formData.documentPhotoFront);
+  console.log('Back Photo captured:', !!formData.documentPhotoBack);
+  console.log('Location:', location);
+  console.log('Submitted by:', userAadhaar);
   console.log('---------------------------');
   
   if (sheetId && googleCreds) {
@@ -82,19 +93,24 @@ export async function submitForm(
         
         const values = [[
             new Date().toISOString(),
+            formData.voterType,
             formData.fullName,
-            age,
+            formData.mobile,
             formData.address,
-            `${formData.location?.latitude}, ${formData.location?.longitude}`,
-            formData.user,
-            formData.photo ? 'Yes' : 'No',
-            dob.toLocaleDateString()
+            'rspNo' in formData ? formData.rspNo : '',
+            'reason' in formData ? formData.reason : '',
+            `${location?.latitude}, ${location?.longitude}`,
+            userAadhaar,
+            formData.documentPhotoFront ? 'Yes' : 'No',
+            formData.documentPhotoBack ? 'Yes' : 'No',
         ]];
+
+        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Location', 'Submitted By', 'Front Photo?', 'Back Photo?'];
 
         // Check if header exists
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'A1:H1',
+            range: 'A1:K1',
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
@@ -103,7 +119,7 @@ export async function submitForm(
                 range: 'A1',
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
-                    values: [['Timestamp', 'Full Name', 'Age', 'Address', 'Location', 'Submitted By', 'Photo Captured?', 'Date of Birth']],
+                    values: [headerRow],
                 },
             });
         }
@@ -122,11 +138,12 @@ export async function submitForm(
     }
   } else {
      await new Promise(resolve => setTimeout(resolve, 1500)); 
+     console.log("Submission successful (local simulation). No Sheet ID or creds provided.");
   }
 
 
   return {
-    message: `Data for ${validatedFields.data.fullName} submitted successfully!`,
+    message: `Data for ${formData.fullName} submitted successfully!`,
     status: 'success',
   };
 }

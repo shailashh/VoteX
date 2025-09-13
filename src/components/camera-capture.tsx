@@ -10,9 +10,10 @@ import Image from 'next/image';
 interface CameraCaptureProps {
   onCapture: (imageDataUrl: string) => void;
   photo: string | null;
+  title: string;
 }
 
-export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
+export function CameraCapture({ onCapture, photo, title }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraInitializing, setIsCameraInitializing] = useState(true);
@@ -87,6 +88,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
+      <h3 className="font-semibold text-center">{title}</h3>
       <Card className="relative w-full max-w-md aspect-video overflow-hidden rounded-lg shadow-inner bg-muted">
         {photo ? (
           <Image src={photo} alt="Captured photo" fill className="object-cover" />
