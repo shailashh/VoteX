@@ -15,28 +15,27 @@ interface CameraCaptureProps {
 export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const [isCameraInitializing, setIsCameraInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-      if(videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
     }
   }, []);
 
   const startCamera = useCallback(async () => {
-    stopCamera(); // Stop any existing stream first
+    stopCamera();
     setIsCameraInitializing(true);
     setError(null);
-  
+
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera not supported on this browser.");
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      streamRef.current = mediaStream;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
@@ -50,9 +49,8 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
         errorMessage = `The rear camera could not be found on this device.`;
       }
       setError(errorMessage);
-      streamRef.current = null;
     } finally {
-        setIsCameraInitializing(false);
+      setIsCameraInitializing(false);
     }
   }, [stopCamera]);
 
@@ -62,7 +60,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
     } else {
       stopCamera();
     }
-    
+
     return () => {
       stopCamera();
     };
