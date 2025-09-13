@@ -5,11 +5,11 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Send, AlertTriangle, User, MapPin } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, User, MapPin, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
 import { updateUserStatus, updateUserSubmissions, getUser } from '@/app/api/users/user-actions';
-
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,10 +21,19 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { useLocation, type Location } from '@/hooks/use-location';
 import { ShieldCheck } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  age: z.coerce.number().min(18, { message: 'You must be at least 18.' }).max(120),
+  dob: z.date({
+    required_error: "Date of birth is required.",
+  }).refine((date) => {
+    const today = new Date();
+    const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return date <= eighteenYearsAgo;
+  }, { message: "You must be at least 18 years old." }),
   address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
   photo: z.string().min(1, 'A photo is required.'),
 });
@@ -32,7 +41,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const steps = [
-  { id: 'Step 1', title: 'Personal Info', fields: ['fullName', 'age', 'address'], icon: User },
+  { id: 'Step 1', title: 'Personal Info', fields: ['fullName', 'dob', 'address'], icon: User },
   { id: 'Step 2', title: 'Photo & Location', fields: ['photo'], icon: MapPin },
   { id: 'Step 3', title: 'Review & Submit', fields: [], icon: ShieldCheck },
 ];
@@ -72,7 +81,6 @@ export default function DataEntryForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
-      age: '' as any,
       address: '',
       photo: '',
     },
@@ -248,13 +256,43 @@ export default function DataEntryForm() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
-                name="age"
+                name="dob"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age *</FormLabel>
-                    <FormControl><Input type="number" placeholder="18" {...field} /></FormControl>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date of Birth *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -311,8 +349,8 @@ export default function DataEntryForm() {
                   <p>{watchedValues.fullName}</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Age</h3>
-                  <p>{watchedValues.age}</p>
+                  <h3 className="font-semibold">Date of Birth</h3>
+                  <p>{watchedValues.dob ? format(watchedValues.dob, "PPP") : 'N/A'}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold">Address</h3>

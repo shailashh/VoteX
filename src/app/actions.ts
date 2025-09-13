@@ -6,7 +6,7 @@ import { google } from 'googleapis';
 const formSchema = z.object({
   user: z.string().min(1, 'User selection is required.'),
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
-  age: z.coerce.number().min(1, 'Age is required.'),
+  dob: z.coerce.date(),
   address: z.string().min(10, 'Address must be at least 10 characters.'),
   photo: z.string().optional(),
   location: z
@@ -36,6 +36,16 @@ async function getGoogleSheetsClient(creds: string) {
     return google.sheets({ version: 'v4', auth });
 }
 
+function calculateAge(dob: Date): number {
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDifference = today.getMonth() - dob.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+
 export async function submitForm(
   data: z.infer<typeof formSchema>
 ): Promise<FormState> {
@@ -49,12 +59,14 @@ export async function submitForm(
     };
   }
   
-  const { sheetId, googleCreds, ...formData } = validatedFields.data;
+  const { sheetId, googleCreds, dob, ...formData } = validatedFields.data;
+  const age = calculateAge(dob);
 
   console.log('--- New Form Submission ---');
   console.log('User:', formData.user);
   console.log('Full Name:', formData.fullName);
-  console.log('Age:', formData.age);
+  console.log('Date of Birth:', dob.toLocaleDateString());
+  console.log('Calculated Age:', age);
   console.log('Address:', formData.address);
   console.log(
     'Photo captured:',
@@ -71,17 +83,18 @@ export async function submitForm(
         const values = [[
             new Date().toISOString(),
             formData.fullName,
-            formData.age,
+            age,
             formData.address,
             `${formData.location?.latitude}, ${formData.location?.longitude}`,
             formData.user,
-            formData.photo ? 'Yes' : 'No'
+            formData.photo ? 'Yes' : 'No',
+            dob.toLocaleDateString()
         ]];
 
         // Check if header exists
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'A1:G1',
+            range: 'A1:H1',
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
@@ -90,7 +103,7 @@ export async function submitForm(
                 range: 'A1',
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
-                    values: [['Timestamp', 'Full Name', 'Age', 'Address', 'Location', 'Submitted By', 'Photo Captured?']],
+                    values: [['Timestamp', 'Full Name', 'Age', 'Address', 'Location', 'Submitted By', 'Photo Captured?', 'Date of Birth']],
                 },
             });
         }
