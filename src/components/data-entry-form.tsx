@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CameraCapture } from '@/components/camera-capture';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
+import { useLocation, type Location } from '@/hooks/use-location';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -26,7 +28,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-type Location = { latitude: number; longitude: number };
 
 const steps = [
   { id: 'Step 1', title: 'Personal Info', fields: ['fullName', 'age', 'address'], icon: User },
@@ -61,9 +62,8 @@ function Stepper({ currentStep }: { currentStep: number }) {
 export default function DataEntryForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [location, setLocation] = useState<Location | null>(null);
   const { toast } = useToast();
+  const { location, error: locationError, startTracking, stopTracking, isTracking } = useLocation();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -77,45 +77,19 @@ export default function DataEntryForm() {
   });
 
   useEffect(() => {
-    let watchId: number;
-
-    const startLocationTracking = () => {
-      setLocationError(null);
-      if (!navigator.geolocation) {
-        const errorMsg = "Geolocation is not supported by your browser.";
-        setLocationError(errorMsg);
-        toast({ title: 'Location Error', description: errorMsg, variant: 'destructive' });
-        return;
-      }
-
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setLocationError(null);
-        },
-        (error) => {
-          let errorMessage = "An unknown error occurred while capturing location.";
-          if (error.code === 1) { // PERMISSION_DENIED
-            errorMessage = "Please allow location access to submit the form.";
-          }
-          setLocationError(errorMessage);
-          setLocation(null);
-          toast({ title: 'Location Error', description: errorMessage, variant: 'destructive' });
-        }
-      );
-    };
-
-    startLocationTracking();
-
-    return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [toast]);
+    // Start tracking when moving to step 2 or 3, stop if going back to step 1
+    if (currentStep >= 1 && !isTracking) {
+      startTracking();
+    } else if (currentStep === 0 && isTracking) {
+      stopTracking();
+    }
+  }, [currentStep, isTracking, startTracking, stopTracking]);
+  
+  useEffect(() => {
+    if (locationError) {
+      toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
+    }
+  }, [locationError, toast]);
 
 
   const watchedValues = useWatch({ control: form.control });
@@ -164,7 +138,6 @@ export default function DataEntryForm() {
         });
         form.reset();
         setCurrentStep(0);
-        setLocation(null);
       } else {
         toast({
           title: 'Error',
@@ -353,5 +326,3 @@ export default function DataEntryForm() {
     </>
   );
 }
-
-    
