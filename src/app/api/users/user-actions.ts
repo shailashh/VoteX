@@ -11,13 +11,17 @@ async function readUsers() {
   } catch (error) {
     // If the file doesn't exist, start with an empty array
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      await ensureDataDirectory();
+      await writeUsers([]);
       return [];
     }
-    throw error;
+    console.error("Error reading users file:", error);
+    throw new Error("Could not read user data.");
   }
 }
 
 async function writeUsers(data: any) {
+  await ensureDataDirectory();
   await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
@@ -29,9 +33,6 @@ async function ensureDataDirectory() {
         console.error("Could not create data directory", e);
     }
 }
-
-ensureDataDirectory();
-
 
 export async function getUsers() {
   return await readUsers();
