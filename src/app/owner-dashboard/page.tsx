@@ -1,6 +1,8 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import {
   Card,
@@ -38,6 +40,8 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const users = [
   {
@@ -73,8 +77,39 @@ const users = [
 ];
 
 export default function OwnerDashboard() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    if (role !== 'owner') {
+      router.push('/data-entry');
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [router]);
+
+  if (!isAuthorized) {
+    return (
+       <div className="flex min-h-screen w-full flex-col bg-gray-50/90">
+         <Header />
+         <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+           <div className="w-full max-w-6xl mx-auto">
+             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
+             </div>
+             <Skeleton className="h-[400px]" />
+           </div>
+         </main>
+       </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gray-50/90">
+    <>
       <Header />
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl mx-auto">
@@ -218,6 +253,6 @@ export default function OwnerDashboard() {
           </Card>
         </div>
       </main>
-    </div>
+    </>
   );
 }

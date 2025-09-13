@@ -27,7 +27,9 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
+        <div className="flex min-h-screen w-full flex-col bg-gray-50/90">
+            {children}
+        </div>
         <Toaster />
       </body>
     </html>
