@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ShieldCheck, LogOut, Menu, User, Database, Settings } from 'lucide-react';
+import { LogOut, Menu, User, Database, Settings } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Sheet,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/sheet';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { VotexLogo } from './ui/votex-logo';
 
 export default function Header() {
   const pathname = usePathname();
@@ -71,7 +72,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center space-x-2">
-              <ShieldCheck className="h-7 w-7 text-primary" />
+              <VotexLogo className="h-7 w-7" />
               <span className="font-bold text-xl">VoteX</span>
             </Link>
             <nav className="hidden md:flex items-center h-full space-x-8">
@@ -111,7 +112,7 @@ export default function Header() {
                 <SheetContent side="right" className="w-[280px] p-0">
                   <SheetHeader className="p-4 border-b">
                      <SheetTitle className="flex items-center space-x-2">
-                        <ShieldCheck className="h-7 w-7 text-primary" />
+                        <VotexLogo className="h-7 w-7" />
                         <span className="font-bold text-xl">VoteX Menu</span>
                      </SheetTitle>
                   </SheetHeader>

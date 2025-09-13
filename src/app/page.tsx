@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, User, Building, LogIn } from 'lucide-react';
+import { User, Building, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
+import { VotexLogo } from '@/components/ui/votex-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center space-x-3 mb-4">
-            <ShieldCheck className="h-12 w-12 text-primary" />
+            <VotexLogo className="h-12 w-12" />
             <span className="text-4xl font-bold">VoteX</span>
           </div>
           <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
