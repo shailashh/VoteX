@@ -106,7 +106,7 @@ export default function Header() {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[280px]">
+                <SheetContent side="right" className="w-[280px] p-0">
                   <div className="flex flex-col h-full">
                     <div className="flex items-center space-x-2 p-4 border-b">
                        <ShieldCheck className="h-7 w-7 text-primary" />
