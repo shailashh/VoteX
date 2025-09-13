@@ -144,8 +144,8 @@ const saveUsersToStorage = (users: any) => {
 export default function OwnerDashboard() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [users, setUsers] = useState(getUsersFromStorage);
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
   const [isAddUserOpen, setAddUserOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [newAadhaar, setNewAadhaar] = useState("");
@@ -250,15 +250,13 @@ export default function OwnerDashboard() {
     if (role !== 'owner') {
       router.push('/');
     } else {
-      setIsAuthorized(true);
+      setUsers(getUsersFromStorage());
+      setIsLoading(false);
     }
   }, [router]);
   
-  useEffect(() => {
-    setUsers(getUsersFromStorage());
-  }, []);
 
-  if (!isAuthorized) {
+  if (isLoading) {
     return <FullPageLoader />;
   }
 
@@ -547,4 +545,5 @@ export default function OwnerDashboard() {
   );
 }
 
+    
     
