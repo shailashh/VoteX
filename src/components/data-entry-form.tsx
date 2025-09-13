@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { useLocation, type Location } from '@/hooks/use-location';
 import { VotexLogo } from './ui/votex-logo';
+import { ShieldCheck } from 'lucide-react';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -32,7 +33,7 @@ type FormData = z.infer<typeof formSchema>;
 const steps = [
   { id: 'Step 1', title: 'Personal Info', fields: ['fullName', 'age', 'address'], icon: User },
   { id: 'Step 2', title: 'Photo & Location', fields: ['photo'], icon: MapPin },
-  { id: 'Step 3', title: 'Review & Submit', fields: [], icon: VotexLogo },
+  { id: 'Step 3', title: 'Review & Submit', fields: [], icon: ShieldCheck },
 ];
 
 function Stepper({ currentStep }: { currentStep: number }) {
@@ -405,3 +406,5 @@ export default function DataEntryForm() {
     </>
   );
 }
+
+    

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import {
@@ -37,13 +37,11 @@ import {
   Trash2,
   PlusCircle,
   Database,
-  Upload,
   FileText,
   UserPlus,
   KeyRound,
   Copy,
   Loader2,
-  AlertTriangle,
   RotateCcw,
   Users,
   Shield,
@@ -73,7 +71,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { createSheetForUser } from '../actions';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
-import { VotexLogo } from '@/components/ui/votex-logo';
 
 const initialUsers = [
   {
@@ -117,14 +114,12 @@ const initialUsers = [
   },
 ];
 
-// Mock database in localStorage
 const getUsersFromStorage = () => {
-  if (typeof window === 'undefined') return initialUsers;
+  if (typeof window === 'undefined') return [];
   const storedUsers = localStorage.getItem('appUsers');
   if (storedUsers) {
     try {
         const parsedUsers = JSON.parse(storedUsers);
-        // Ensure all users have required fields
         return parsedUsers.map((u: any) => ({ ...u, submissions: u.submissions || 0, status: u.status || 'Inactive' }));
     } catch(e) {
         localStorage.setItem('appUsers', JSON.stringify(initialUsers));
@@ -147,10 +142,24 @@ export default function OwnerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [isAddUserOpen, setAddUserOpen] = useState(false);
+  const [isEditUserOpen, setEditUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    if (role !== 'owner') {
+      router.push('/');
+    } else {
+      setUsers(getUsersFromStorage());
+      setIsLoading(false);
+    }
+  }, [router]);
 
   const handleGeneratePassword = () => {
     const password = Math.random().toString(36).slice(-8);
@@ -171,7 +180,7 @@ export default function OwnerDashboard() {
     const email = newUserEmail || `user${users.length + 1}@example.com`;
 
     const newUser = {
-      id: users.length + 1,
+      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
       name: name,
       email: email,
       avatar: name.split(' ').map(n => n[0]).join(''),
@@ -191,6 +200,23 @@ export default function OwnerDashboard() {
     setGeneratedPassword("");
     setNewAadhaar("");
     setNewUserEmail("");
+  };
+
+  const handleEditUser = () => {
+    if (!editingUser) return;
+
+    const updatedUsers = users.map(u => u.id === editingUser.id ? editingUser : u);
+    setUsers(updatedUsers);
+    saveUsersToStorage(updatedUsers);
+
+    toast({ title: "User Updated", description: `${editingUser.name}'s details have been updated.` });
+    setEditUserOpen(false);
+    setEditingUser(null);
+  };
+
+  const openEditDialog = (user: any) => {
+    setEditingUser({ ...user });
+    setEditUserOpen(true);
   };
 
   const copyToClipboard = (text: string) => {
@@ -216,7 +242,7 @@ export default function OwnerDashboard() {
     const result = await createSheetForUser(user.name, user.email, masterSheetId, googleCreds);
 
     if (result.status === 'success' && result.sheetId) {
-        const updatedUsers = users.map(u => u.id === user.id ? { ...u, sheet: { id: result.sheetId, name: `User_Data_${user.name}` } } : u);
+        const updatedUsers = users.map(u => u.id === user.id ? { ...u, sheet: { id: result.sheetId, name: `User_Data_${user.name.replace(/\s/g, '_')}` } } : u);
         setUsers(updatedUsers);
         saveUsersToStorage(updatedUsers);
         toast({ title: "Sheet Created", description: `Sheet for ${user.name} created successfully.` });
@@ -243,24 +269,21 @@ export default function OwnerDashboard() {
     saveUsersToStorage(updatedUsers);
     toast({ title: "User Recovered", description: "The user has been restored to the main list." });
   };
-
-
-  useEffect(() => {
-    const role = localStorage.getItem('userRole');
-    if (role !== 'owner') {
-      router.push('/');
-    } else {
-      setUsers(getUsersFromStorage());
-      setIsLoading(false);
-    }
-  }, [router]);
   
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [users, searchTerm, statusFilter]);
 
   if (isLoading) {
     return <FullPageLoader />;
   }
 
-  const activeUsers = users.filter(u => u.status !== 'Deleted');
+  const activeUsers = filteredUsers.filter(u => u.status !== 'Deleted');
   const deletedUsers = users.filter(u => u.status === 'Deleted');
   const totalSubmissions = users.reduce((acc, user) => acc + (user.submissions || 0), 0);
 
@@ -318,16 +341,18 @@ export default function OwnerDashboard() {
                     <Input
                       placeholder="Search users..."
                       className="pl-8 w-full md:w-64"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                    <Dialog open={isAddUserOpen} onOpenChange={setAddUserOpen}>
@@ -388,6 +413,13 @@ export default function OwnerDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {activeUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No users found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {activeUsers.map((user) => (
                     <TableRow key={user.id}>
                       {isCreatingSheet === user.id ? (
@@ -446,7 +478,7 @@ export default function OwnerDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
                                 <FileEdit className="h-4 w-4 text-blue-500" />
                               </Button>
                               {user.sheet && (
@@ -538,12 +570,39 @@ export default function OwnerDashboard() {
               </CardContent>
             </Card>
           )}
-
         </div>
       </main>
+      
+      {/* Edit User Dialog */}
+      <Dialog open={isEditUserOpen} onOpenChange={setEditUserOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update the details for {editingUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-name" className="text-right">Name</Label>
+                <Input id="edit-name" value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-email" className="text-right">Email</Label>
+                <Input id="edit-email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="col-span-3" />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" onClick={handleEditUser}>
+                Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
-    
     
