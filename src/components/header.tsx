@@ -108,14 +108,13 @@ export default function Header() {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[280px] p-0">
+                <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
                   <SheetHeader className="p-4 border-b">
                      <SheetTitle className="flex items-center space-x-2">
                         <ShieldCheck className="h-7 w-7 text-primary" />
                         <span className="font-bold text-xl">VoteX Menu</span>
                      </SheetTitle>
                   </SheetHeader>
-                  <div className="flex flex-col h-full">
                     <nav className="flex-1 flex flex-col gap-2 p-4">
                         {navLinks.map((link) => link.show && (
                            <SheetClose asChild key={link.href}>
@@ -139,7 +138,6 @@ export default function Header() {
                             Logout
                         </Button>
                     </div>
-                  </div>
                 </SheetContent>
               </Sheet>
             </div>
