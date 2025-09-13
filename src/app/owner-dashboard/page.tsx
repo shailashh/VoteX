@@ -43,6 +43,7 @@ import {
   Shield,
   Copy,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -53,6 +54,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { createSheetForUser } from '../actions';
@@ -134,6 +146,7 @@ export default function OwnerDashboard() {
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<any | null>(null);
 
 
   const handleGeneratePassword = () => {
@@ -208,6 +221,14 @@ export default function OwnerDashboard() {
         toast({ title: "Error", description: result.message, variant: 'destructive' });
     }
     setIsCreatingSheet(null);
+  };
+  
+  const handleDeleteUser = (userId: number) => {
+    const updatedUsers = users.filter(user => user.id !== userId);
+    setUsers(updatedUsers);
+    saveUsersToStorage(updatedUsers);
+    toast({ title: "User Deleted", description: "The user has been removed." });
+    setUserToDelete(null);
   };
 
 
@@ -410,9 +431,28 @@ export default function OwnerDashboard() {
                               <ExternalLink className="h-4 w-4 text-yellow-500" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the user
+                                  and their associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                    Continue
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
