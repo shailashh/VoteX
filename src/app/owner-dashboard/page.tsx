@@ -46,7 +46,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Users,
-  Shield
+  Shield,
+  ShieldCheck
 } from 'lucide-react';
 import {
   Dialog,
@@ -391,88 +392,95 @@ export default function OwnerDashboard() {
                 <TableBody>
                   {activeUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>{user.avatar}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {user.email}
-                            </div>
+                      {isCreatingSheet === user.id ? (
+                        <TableCell colSpan={5} className="text-center">
+                          <div className="flex items-center justify-center gap-2 p-4">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            <span>Creating sheet for {user.name}...</span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {user.sheet ? (
-                          <div>
-                            <div>{user.sheet.name}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Grid className="h-3 w-3" />
-                              <a href={`https://docs.google.com/spreadsheets/d/${user.sheet.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{user.sheet.id.substring(0,15)}...</a>
+                        </TableCell>
+                      ) : (
+                        <>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarFallback>{user.avatar}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {user.email}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={() => handleAssignSheet(user)} disabled={isCreatingSheet === user.id}>
-                            {isCreatingSheet === user.id ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                          </TableCell>
+                          <TableCell>
+                            {user.sheet ? (
+                              <div>
+                                <div>{user.sheet.name}</div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Grid className="h-3 w-3" />
+                                  <a href={`https://docs.google.com/spreadsheets/d/${user.sheet.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{user.sheet.id.substring(0,15)}...</a>
+                                </div>
+                              </div>
                             ) : (
-                                <><PlusCircle className="mr-2 h-4 w-4" />Assign Sheet</>
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            user.status === 'Active' ? 'default' : 'secondary'
-                          }
-                          className={
-                            user.status === 'Active'
-                              ? 'bg-green-100 text-green-800 hover:bg-green-100/80'
-                              : 'bg-gray-100 text-gray-800'
-                          }
-                        >
-                          {user.status}
-                        </Badge>
-                      </TableCell>
-                       <TableCell>
-                        <div className="font-medium text-center">{user.submissions}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon">
-                            <FileEdit className="h-4 w-4 text-blue-500" />
-                          </Button>
-                          {user.sheet && (
-                            <Button variant="ghost" size="icon" onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${user.sheet.id}`, "_blank")}>
-                              <ExternalLink className="h-4 w-4 text-yellow-500" />
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                              <Button variant="outline" size="sm" onClick={() => handleAssignSheet(user)} disabled={isCreatingSheet === user.id}>
+                                  <PlusCircle className="mr-2 h-4 w-4" />Assign Sheet
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will move the user to the deleted section. They can be recovered later.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
-                                    Continue
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                user.status === 'Active' ? 'default' : 'secondary'
+                              }
+                              className={
+                                user.status === 'Active'
+                                  ? 'bg-green-100 text-green-800 hover:bg-green-100/80'
+                                  : 'bg-gray-100 text-gray-800'
+                              }
+                            >
+                              {user.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-center">{user.submissions}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="icon">
+                                <FileEdit className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              {user.sheet && (
+                                <Button variant="ghost" size="icon" onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${user.sheet.id}`, "_blank")}>
+                                  <ExternalLink className="h-4 w-4 text-yellow-500" />
+                                </Button>
+                              )}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will move the user to the deleted section. They can be recovered later.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                        Continue
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -538,3 +546,5 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
