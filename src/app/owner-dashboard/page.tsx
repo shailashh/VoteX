@@ -98,7 +98,7 @@ export default function OwnerDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1,250</div>
+                <div className="text-2xl font-bold">0</div>
               </CardContent>
             </Card>
             <Card>
