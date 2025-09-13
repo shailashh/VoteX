@@ -16,8 +16,11 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isWorkerLoginOpen, setWorkerLoginOpen] = useState(false);
+  const [isOwnerLoginOpen, setOwnerLoginOpen] = useState(false);
   const [aadhaar, setAadhaar] = useState('');
   const [password, setPassword] = useState('');
+  const [ownerId, setOwnerId] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -33,9 +36,15 @@ export default function LoginPage() {
   }, [router]);
 
   const handleOwnerLogin = () => {
-    localStorage.setItem('userRole', 'owner');
-    setUserRole('owner');
-    router.push('/owner-dashboard');
+    if (ownerId === 'owner42467' && ownerPassword === 'shailesh42467') {
+      localStorage.setItem('userRole', 'owner');
+      setUserRole('owner');
+      toast({ title: "Login Successful", description: "Welcome, Owner!" });
+      router.push('/owner-dashboard');
+      setOwnerLoginOpen(false);
+    } else {
+      toast({ title: "Login Failed", description: "Invalid ID or password.", variant: "destructive" });
+    }
   };
 
   const handleWorkerLogin = () => {
@@ -76,14 +85,58 @@ export default function LoginPage() {
           <CardDescription>Please select your role to continue.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-            <Button
-                variant="outline"
-                className="w-full h-16 text-lg"
-                onClick={handleOwnerLogin}
-            >
-                <Building className="mr-3 h-6 w-6" />
-                Login as Owner
-            </Button>
+            <Dialog open={isOwnerLoginOpen} onOpenChange={setOwnerLoginOpen}>
+              <DialogTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="w-full h-16 text-lg"
+                >
+                    <Building className="mr-3 h-6 w-6" />
+                    Login as Owner
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Owner Login</DialogTitle>
+                  <DialogDescription>
+                    Enter your ID and password to access the dashboard.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="ownerId" className="text-right">
+                      ID
+                    </Label>
+                    <Input
+                      id="ownerId"
+                      placeholder="Your owner ID"
+                      className="col-span-3"
+                      value={ownerId}
+                      onChange={(e) => setOwnerId(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="ownerPassword" className="text-right">
+                      Password
+                    </Label>
+                    <Input
+                      id="ownerPassword"
+                      type="password"
+                      className="col-span-3"
+                      value={ownerPassword}
+                      onChange={(e) => setOwnerPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" onClick={handleOwnerLogin}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={isWorkerLoginOpen} onOpenChange={setWorkerLoginOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -141,5 +194,4 @@ export default function LoginPage() {
     </main>
   );
 }
-
     
