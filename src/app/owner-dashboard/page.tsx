@@ -36,6 +36,7 @@ import {
   PlusCircle,
   Database,
   Upload,
+  FileText,
 } from 'lucide-react';
 
 const users = [
@@ -87,6 +88,17 @@ export default function OwnerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">2</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Submissions
+                </CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">1,250</div>
               </CardContent>
             </Card>
             <Card>
