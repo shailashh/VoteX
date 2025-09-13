@@ -71,6 +71,7 @@ const initialUsers = [
     status: 'Active',
     aadhaar: '123456789012',
     password: 'password123',
+    submissions: 25,
   },
   {
     id: 2,
@@ -84,6 +85,7 @@ const initialUsers = [
     status: 'Active',
     aadhaar: '234567890123',
     password: 'password456',
+    submissions: 12,
   },
   {
     id: 3,
@@ -94,6 +96,7 @@ const initialUsers = [
     status: 'Inactive',
     aadhaar: '345678901234',
     password: 'password789',
+    submissions: 0,
   },
 ];
 
@@ -102,7 +105,14 @@ const getUsersFromStorage = () => {
   if (typeof window === 'undefined') return initialUsers;
   const storedUsers = localStorage.getItem('appUsers');
   if (storedUsers) {
-    return JSON.parse(storedUsers);
+    try {
+        const parsedUsers = JSON.parse(storedUsers);
+        // Ensure all users have a submissions count
+        return parsedUsers.map((u: any) => ({ ...u, submissions: u.submissions || 0 }));
+    } catch(e) {
+        localStorage.setItem('appUsers', JSON.stringify(initialUsers));
+        return initialUsers;
+    }
   } else {
     localStorage.setItem('appUsers', JSON.stringify(initialUsers));
     return initialUsers;
@@ -152,6 +162,7 @@ export default function OwnerDashboard() {
       status: 'Inactive',
       aadhaar: newAadhaar,
       password: generatedPassword,
+      submissions: 0,
     };
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
@@ -226,7 +237,7 @@ export default function OwnerDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{users.reduce((acc, user) => acc + (user.submissions || 0), 0)}</div>
               </CardContent>
             </Card>
              <Card>
@@ -317,6 +328,7 @@ export default function OwnerDashboard() {
                     <TableHead>User</TableHead>
                     <TableHead>Assigned Sheet</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Submissions</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -365,6 +377,9 @@ export default function OwnerDashboard() {
                         >
                           {user.status}
                         </Badge>
+                      </TableCell>
+                       <TableCell>
+                        <div className="font-medium text-center">{user.submissions}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
