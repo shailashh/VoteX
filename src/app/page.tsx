@@ -60,6 +60,7 @@ export default function LoginPage() {
 
     if (foundUser) {
       localStorage.setItem('userRole', 'worker');
+      localStorage.setItem('loggedInUser', aadhaar); // Store logged in user's aadhaar
       setUserRole('worker');
       toast({ title: "Login Successful", description: `Welcome, ${foundUser.name}!` });
       router.push('/data-entry');

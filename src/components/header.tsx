@@ -16,7 +16,20 @@ export default function Header() {
     }, []);
 
     const handleLogout = () => {
+        const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+        if (loggedInUserAadhaar) {
+            const storedUsers = localStorage.getItem('appUsers');
+            if (storedUsers) {
+                let users = JSON.parse(storedUsers);
+                const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
+                if (userIndex !== -1) {
+                    users[userIndex].status = 'Inactive';
+                    localStorage.setItem('appUsers', JSON.stringify(users));
+                }
+            }
+        }
         localStorage.removeItem('userRole');
+        localStorage.removeItem('loggedInUser');
         router.push('/');
     };
     

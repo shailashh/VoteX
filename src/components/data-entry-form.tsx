@@ -64,6 +64,7 @@ export default function DataEntryForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { location, error: locationError, startTracking, stopTracking, isTracking } = useLocation();
+  const [isOnline, setIsOnline] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -76,6 +77,39 @@ export default function DataEntryForm() {
     mode: "onTouched"
   });
 
+  const updateUserStatus = (status: 'Active' | 'Inactive') => {
+    const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+    if (!loggedInUserAadhaar) return;
+
+    const storedUsers = localStorage.getItem('appUsers');
+    if (storedUsers) {
+      let users = JSON.parse(storedUsers);
+      const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
+      if (userIndex !== -1) {
+        users[userIndex].status = status;
+        localStorage.setItem('appUsers', JSON.stringify(users));
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check
+    if(typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     // Start tracking when moving to step 2 or 3, stop if going back to step 1
     if (currentStep >= 1 && !isTracking) {
@@ -86,10 +120,18 @@ export default function DataEntryForm() {
   }, [currentStep, isTracking, startTracking, stopTracking]);
   
   useEffect(() => {
-    if (locationError) {
-      toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
+    if (locationError || !isOnline) {
+      updateUserStatus('Inactive');
+      if(locationError) {
+        toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
+      }
+      if(!isOnline) {
+        toast({ title: 'Network Error', description: 'You are offline. Please check your internet connection.', variant: 'destructive' });
+      }
+    } else {
+      updateUserStatus('Active');
     }
-  }, [locationError, toast]);
+  }, [locationError, isOnline, toast]);
 
 
   const watchedValues = useWatch({ control: form.control });
@@ -128,9 +170,20 @@ export default function DataEntryForm() {
 
 
     try {
-      const result = await submitForm({ ...data, location, user: 'User 1' }); // Mocked user
+      const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+      const result = await submitForm({ ...data, location, user: loggedInUserAadhaar || 'Unknown User' }); 
       
       if (result.status === 'success') {
+        const storedUsers = localStorage.getItem('appUsers');
+        if (storedUsers && loggedInUserAadhaar) {
+            let users = JSON.parse(storedUsers);
+            const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
+            if (userIndex !== -1) {
+                users[userIndex].submissions = (users[userIndex].submissions || 0) + 1;
+                localStorage.setItem('appUsers', JSON.stringify(users));
+            }
+        }
+        
         toast({
           title: 'Success!',
           description: result.message,
@@ -262,11 +315,11 @@ export default function DataEntryForm() {
                 </div>
 
 
-                 {locationError && !location && (
+                 {(locationError || !isOnline) && (
                      <Alert variant="destructive" className="mt-4">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Location Unavailable</AlertTitle>
-                        <AlertDescription>{locationError}</AlertDescription>
+                        <AlertTitle>Cannot Submit</AlertTitle>
+                        <AlertDescription>{locationError || "You are offline. Please check your connection."}</AlertDescription>
                     </Alert>
                 )}
             </div>
@@ -307,7 +360,7 @@ export default function DataEntryForm() {
                   Next
                 </Button>
               ) : (
-                <Button type="submit" disabled={isSubmitting || !form.formState.isValid || !location}>
+                <Button type="submit" disabled={isSubmitting || !form.formState.isValid || !location || !isOnline}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...
