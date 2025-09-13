@@ -5,3 +5,11 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+# Defines an environment variable.
+# https://firebase.google.com/docs/app-hosting/configure#environment-variables
+# env:
+#   - variable: API_KEY
+#     # You can use a build-time secret to inject this value.
+#     # https://firebase.google.com/docs/app-hosting/configure-ci-cd#secrets
+#     value: secret:API_KEY
