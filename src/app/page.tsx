@@ -1,9 +1,9 @@
+'use client';
+
 import DataEntryForm from '@/components/data-entry-form';
 import Header from '@/components/header';
-import { usePathname } from 'next/navigation'
 
 export default function Home() {
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50/90">
       <Header />
