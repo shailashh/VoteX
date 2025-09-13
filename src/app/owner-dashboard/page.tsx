@@ -46,7 +46,8 @@ import {
   Users,
   Shield,
   ShieldCheck,
-  Phone
+  Phone,
+  RefreshCw,
 } from 'lucide-react';
 import {
   Dialog,
@@ -341,6 +342,10 @@ export default function OwnerDashboard() {
                       <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button variant="outline" size="icon" onClick={fetchUsers}>
+                    <RefreshCw className="h-4 w-4" />
+                    <span className="sr-only">Refresh</span>
+                  </Button>
                    <Dialog open={isAddUserOpen} onOpenChange={setAddUserOpen}>
                     <DialogTrigger asChild>
                       <Button>
@@ -608,3 +613,5 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
