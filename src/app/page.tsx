@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
-import { loginWorker, loginOwner } from './api/users/user-actions';
+import { loginPartner, loginOwner } from './api/users/user-actions';
 
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isWorkerLoginOpen, setWorkerLoginOpen] = useState(false);
+  const [isPartnerLoginOpen, setPartnerLoginOpen] = useState(false);
   const [isOwnerLoginOpen, setOwnerLoginOpen] = useState(false);
   const [aadhaar, setAadhaar] = useState('');
   const [password, setPassword] = useState('');
@@ -57,21 +57,21 @@ export default function LoginPage() {
     }
   };
 
-  const handleWorkerLogin = async () => {
+  const handlePartnerLogin = async () => {
     if (!aadhaar || !password) {
       toast({ title: "Login Failed", description: "Please enter Aadhaar and password.", variant: "destructive" });
       return;
     }
     
     try {
-      const result = await loginWorker(aadhaar, password);
+      const result = await loginPartner(aadhaar, password);
       if (result.success && result.user) {
-          localStorage.setItem('userRole', 'worker');
+          localStorage.setItem('userRole', 'partner');
           localStorage.setItem('loggedInUser', aadhaar); // Store logged in user's aadhaar
-          setUserRole('worker');
+          setUserRole('partner');
           toast({ title: "Login Successful", description: `Welcome, ${result.user.name}!` });
           router.push('/data-entry');
-          setWorkerLoginOpen(false);
+          setPartnerLoginOpen(false);
       } else {
           toast({ title: "Login Failed", description: result.message, variant: "destructive" });
       }
@@ -148,19 +148,19 @@ export default function LoginPage() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={isWorkerLoginOpen} onOpenChange={setWorkerLoginOpen}>
+            <Dialog open={isPartnerLoginOpen} onOpenChange={setPartnerLoginOpen}>
               <DialogTrigger asChild>
                 <Button
                     variant="outline"
                     className="w-full h-16 text-lg"
                 >
                     <User className="mr-3 h-6 w-6" />
-                    Login as Worker
+                    Login as Partner
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Worker Login</DialogTitle>
+                  <DialogTitle>Partner Login</DialogTitle>
                   <DialogDescription>
                     Enter your Aadhaar number and password to login.
                   </DialogDescription>
@@ -193,7 +193,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" onClick={handleWorkerLogin}>
+                  <Button type="button" onClick={handlePartnerLogin}>
                     <LogIn className="mr-2 h-4 w-4" />
                     Login
                   </Button>

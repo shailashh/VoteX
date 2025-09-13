@@ -45,7 +45,7 @@ export default function Header() {
   const canViewDashboard = userRole === 'owner';
 
   const navLinks = [
-    { href: '/data-entry', label: 'Data Entry', icon: User, show: userRole === 'worker' },
+    { href: '/data-entry', label: 'Data Entry', icon: User, show: userRole === 'partner' },
     {
       href: '/owner-dashboard',
       label: 'Owner Dashboard',

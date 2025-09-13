@@ -9,5 +9,17 @@
     "sheet": null,
     "status": "Inactive",
     "submissions": 0
+  },
+  {
+    "id": 2,
+    "name": "shailesh",
+    "email": "jagatpaswan1111@gmail.com",
+    "aadhaar": "123456789012",
+    "phone": "9067488062",
+    "password": "nii4g2mc",
+    "avatar": "s",
+    "sheet": null,
+    "status": "Inactive",
+    "submissions": 0
   }
 ]

@@ -112,7 +112,7 @@ export async function updateUserSheet(userId: number, sheet: any) {
     return users[userIndex] || null;
 }
 
-export async function loginWorker(aadhaar: string, password: string) {
+export async function loginPartner(aadhaar: string, password: string) {
     const users = await readUsers();
     const user = users.find((u: any) => u.aadhaar === aadhaar && u.password === password);
     if (user) {
