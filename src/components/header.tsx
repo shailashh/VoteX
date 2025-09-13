@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ShieldCheck, User, LogOut } from 'lucide-react';
+import { ShieldCheck, User, LogOut, Sheet } from 'lucide-react';
 import { Button } from './ui/button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -35,6 +35,7 @@ export default function Header() {
     
     const isDataEntry = pathname === '/data-entry';
     const isDashboard = pathname === '/owner-dashboard';
+    const isManageSheets = pathname === '/owner-dashboard/manage-sheets';
 
     const canViewDashboard = userRole === 'owner';
 
@@ -50,7 +51,10 @@ export default function Header() {
                         <nav className="hidden md:flex items-center h-full">
                             <Link href="/data-entry" className={`text-sm font-medium flex items-center h-full px-1 pt-1 ${isDataEntry ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Data Entry</Link>
                             {canViewDashboard && (
+                                <>
                                 <Link href="/owner-dashboard" className={`text-sm font-medium flex items-center h-full px-1 pt-1 ml-8 ${isDashboard ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Owner Dashboard</Link>
+                                <Link href="/owner-dashboard/manage-sheets" className={`text-sm font-medium flex items-center h-full px-1 pt-1 ml-8 ${isManageSheets ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Manage Sheets</Link>
+                                </>
                             )}
                         </nav>
                     </div>

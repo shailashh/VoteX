@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -43,6 +42,7 @@ import {
   KeyRound,
   Shield,
   Copy,
+  Loader2,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
+import { createSheetForUser } from '../actions';
 
 const initialUsers = [
   {
@@ -133,6 +133,7 @@ export default function OwnerDashboard() {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
+  const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
 
 
   const handleGeneratePassword = () => {
@@ -180,6 +181,35 @@ export default function OwnerDashboard() {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Password copied to clipboard." });
   }
+
+  const handleAssignSheet = async (user: any) => {
+    setIsCreatingSheet(user.id);
+    const googleCreds = localStorage.getItem('googleApiCredentials');
+    const masterSheetId = localStorage.getItem('masterSheetId');
+
+    if (!googleCreds || !masterSheetId) {
+      toast({
+        title: "Configuration Missing",
+        description: "Please configure Google Sheets credentials and Master Sheet ID in 'Manage Sheets'.",
+        variant: "destructive"
+      });
+      setIsCreatingSheet(null);
+      return;
+    }
+
+    const result = await createSheetForUser(user.name, user.email, masterSheetId, googleCreds);
+
+    if (result.status === 'success' && result.sheetId) {
+        const updatedUsers = users.map(u => u.id === user.id ? { ...u, sheet: { id: result.sheetId, name: `User_Data_${user.name}` } } : u);
+        setUsers(updatedUsers);
+        saveUsersToStorage(updatedUsers);
+        toast({ title: "Sheet Created", description: `Sheet for ${user.name} created successfully.` });
+    } else {
+        toast({ title: "Error", description: result.message, variant: 'destructive' });
+    }
+    setIsCreatingSheet(null);
+  };
+
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -354,13 +384,16 @@ export default function OwnerDashboard() {
                             <div>{user.sheet.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-1">
                               <Grid className="h-3 w-3" />
-                              {user.sheet.id}
+                              <a href={`https://docs.google.com/spreadsheets/d/${user.sheet.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{user.sheet.id.substring(0,15)}...</a>
                             </div>
                           </div>
                         ) : (
-                          <Button variant="outline" size="sm">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Assign Sheet
+                          <Button variant="outline" size="sm" onClick={() => handleAssignSheet(user)} disabled={isCreatingSheet === user.id}>
+                            {isCreatingSheet === user.id ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                            ) : (
+                                <><PlusCircle className="mr-2 h-4 w-4" />Assign Sheet</>
+                            )}
                           </Button>
                         )}
                       </TableCell>
@@ -387,7 +420,7 @@ export default function OwnerDashboard() {
                             <FileEdit className="h-4 w-4 text-blue-500" />
                           </Button>
                           {user.sheet && (
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${user.sheet.id}`, "_blank")}>
                               <ExternalLink className="h-4 w-4 text-yellow-500" />
                             </Button>
                           )}

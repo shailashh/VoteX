@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -171,7 +170,33 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
-      const result = await submitForm({ ...data, location, user: loggedInUserAadhaar || 'Unknown User' }); 
+      const googleCreds = localStorage.getItem('googleApiCredentials');
+
+      let sheetId: string | undefined;
+      const storedUsers = localStorage.getItem('appUsers');
+
+      if (storedUsers && loggedInUserAadhaar) {
+        const users = JSON.parse(storedUsers);
+        const currentUser = users.find((u: any) => u.aadhaar === loggedInUserAadhaar);
+        if(currentUser && currentUser.sheet) {
+            sheetId = currentUser.sheet.id;
+        }
+      }
+
+      if (!sheetId) {
+        toast({ title: 'Error', description: "No sheet assigned to your user account. Contact the owner.", variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+      }
+
+
+      const result = await submitForm({ 
+        ...data, 
+        location, 
+        user: loggedInUserAadhaar || 'Unknown User',
+        sheetId,
+        googleCreds: googleCreds || undefined,
+      }); 
       
       if (result.status === 'success') {
         const storedUsers = localStorage.getItem('appUsers');
@@ -379,5 +404,3 @@ export default function DataEntryForm() {
     </>
   );
 }
-
-    
