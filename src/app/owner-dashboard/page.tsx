@@ -189,8 +189,7 @@ export default function OwnerDashboard() {
          <Header />
          <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
            <div className="w-full max-w-6xl mx-auto">
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-                <Skeleton className="h-24" />
+             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                 <Skeleton className="h-24" />
                 <Skeleton className="h-24" />
                 <Skeleton className="h-24" />
@@ -207,7 +206,7 @@ export default function OwnerDashboard() {
       <Header />
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -225,17 +224,6 @@ export default function OwnerDashboard() {
                   Total Submissions
                 </CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Pending Reviews
-                </CardTitle>
-                <Upload className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
@@ -404,5 +392,3 @@ export default function OwnerDashboard() {
     </>
   );
 }
-
-    
