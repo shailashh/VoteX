@@ -26,15 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Grid,
-  AlertTriangle,
   Search,
   FileEdit,
   ExternalLink,
   Trash2,
   PlusCircle,
+  Database,
+  Upload,
 } from 'lucide-react';
 
 const users = [
@@ -82,7 +83,7 @@ export default function OwnerDashboard() {
                 <CardTitle className="text-sm font-medium">
                   Active Sheets
                 </CardTitle>
-                <Grid className="h-4 w-4 text-muted-foreground" />
+                <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">2</div>
@@ -93,7 +94,7 @@ export default function OwnerDashboard() {
                 <CardTitle className="text-sm font-medium">
                   Pending Reviews
                 </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <Upload className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
