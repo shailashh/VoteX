@@ -86,8 +86,10 @@ export default function DataEntryForm() {
       let users = JSON.parse(storedUsers);
       const userIndex = users.findIndex((u: any) => u.aadhaar === loggedInUserAadhaar);
       if (userIndex !== -1) {
-        users[userIndex].status = status;
-        localStorage.setItem('appUsers', JSON.stringify(users));
+        if (users[userIndex].status !== status) {
+          users[userIndex].status = status;
+          localStorage.setItem('appUsers', JSON.stringify(users));
+        }
       }
     }
   };
@@ -120,14 +122,12 @@ export default function DataEntryForm() {
   }, [currentStep, isTracking, startTracking, stopTracking]);
   
   useEffect(() => {
-    if (locationError || !isOnline) {
+    if (locationError) {
       updateUserStatus('Inactive');
-      if(locationError) {
-        toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
-      }
-      if(!isOnline) {
-        toast({ title: 'Network Error', description: 'You are offline. Please check your internet connection.', variant: 'destructive' });
-      }
+      toast({ title: 'Location Error', description: locationError, variant: 'destructive' });
+    } else if (!isOnline) {
+      updateUserStatus('Inactive');
+      toast({ title: 'Network Error', description: 'You are offline. Please check your internet connection.', variant: 'destructive' });
     } else {
       updateUserStatus('Active');
     }
@@ -379,3 +379,5 @@ export default function DataEntryForm() {
     </>
   );
 }
+
+    
