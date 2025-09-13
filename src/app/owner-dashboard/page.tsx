@@ -39,11 +39,24 @@ import {
   Database,
   Upload,
   FileText,
+  UserPlus,
+  KeyRound,
+  Shield,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 
-const users = [
+const initialUsers = [
   {
     id: 1,
     name: 'John Doe',
@@ -79,6 +92,31 @@ const users = [
 export default function OwnerDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [users, setUsers] = useState(initialUsers);
+  const [isAddUserOpen, setAddUserOpen] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState("");
+
+  const handleGeneratePassword = () => {
+    const password = Math.random().toString(36).slice(-8);
+    setGeneratedPassword(password);
+  };
+  
+  const handleAddUser = () => {
+    // This is a mock implementation. In a real app, you would
+    // validate the form data and make an API call.
+    const newUser = {
+      id: users.length + 1,
+      name: 'New User', // Replace with form data
+      email: 'new.user@example.com', // Replace with form data
+      avatar: 'NU',
+      sheet: null,
+      status: 'Inactive',
+    };
+    setUsers([...users, newUser]);
+    setAddUserOpen(false);
+    setGeneratedPassword("");
+  };
+
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -147,6 +185,17 @@ export default function OwnerDashboard() {
                 <div className="text-2xl font-bold">0</div>
               </CardContent>
             </Card>
+             <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{users.length}</div>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
@@ -171,6 +220,49 @@ export default function OwnerDashboard() {
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
+                   <Dialog open={isAddUserOpen} onOpenChange={setAddUserOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <UserPlus className="mr-2 h-4 w-4" /> Add User
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Add New User</DialogTitle>
+                        <DialogDescription>
+                          Enter the details for the new user. An initial password will be generated.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="aadhar" className="text-right">Aadhaar No.</Label>
+                          <Input id="aadhar" placeholder="XXXX XXXX XXXX" className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="otp" className="text-right">OTP</Label>
+                          <div className="col-span-3 flex gap-2">
+                            <Input id="otp" placeholder="6-digit OTP" />
+                            <Button variant="outline">Send OTP</Button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                           <Label htmlFor="password" className="text-right">Password</Label>
+                           <div className="col-span-3 flex gap-2">
+                            <Input id="password" value={generatedPassword} readOnly placeholder="Click to generate" />
+                             <Button variant="secondary" onClick={handleGeneratePassword}>
+                               <KeyRound className="h-4 w-4" />
+                            </Button>
+                           </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" onClick={handleAddUser}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Save User
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardHeader>
@@ -223,8 +315,8 @@ export default function OwnerDashboard() {
                           }
                           className={
                             user.status === 'Active'
-                              ? 'bg-green-100 text-green-800'
-                              : ''
+                              ? 'bg-green-100 text-green-800 hover:bg-green-100/80'
+                              : 'bg-gray-100 text-gray-800'
                           }
                         >
                           {user.status}
