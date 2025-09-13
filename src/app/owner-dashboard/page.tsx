@@ -191,9 +191,9 @@ export default function OwnerDashboard() {
     setEditUserOpen(true);
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, type: string = "Password") => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Password copied to clipboard." });
+    toast({ title: "Copied!", description: `${type} copied to clipboard.` });
   }
 
   const handleAssignSheet = async (user: any) => {
@@ -250,7 +250,7 @@ export default function OwnerDashboard() {
         setUsers(updatedUsers);
         toast({ title: "User Recovered", description: "The user has been restored to the main list." });
     } catch(e) {
-        toast({ title: "Error", description: "Failed to recover user.", variant: 'destructive' });
+        toast({ title: "Error", description: "Failed to recover user.", variant: "destructive" });
     }
   };
   
@@ -452,6 +452,15 @@ export default function OwnerDashboard() {
                                     {user.aadhaar}
                                   </div>
                                 )}
+                                {user.password && (
+                                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <KeyRound className="h-3 w-3" />
+                                    <span>{user.password}</span>
+                                    <button onClick={() => copyToClipboard(user.password, "Password")} className="ml-1 opacity-50 hover:opacity-100">
+                                      <Copy className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -619,6 +628,8 @@ export default function OwnerDashboard() {
     </>
   );
 }
+
+    
 
     
 
