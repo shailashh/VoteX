@@ -75,7 +75,7 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Card className="relative w-full aspect-video overflow-hidden rounded-lg shadow-inner bg-muted">
+      <Card className="relative w-full max-w-md aspect-video overflow-hidden rounded-lg shadow-inner bg-muted">
         {photo ? (
           <Image src={photo} alt="Captured photo" fill className="object-cover" />
         ) : (
@@ -101,16 +101,16 @@ export function CameraCapture({ onCapture, photo }: CameraCaptureProps) {
       <div className="flex gap-4">
         {photo ? (
           <>
-            <Button variant="secondary" onClick={handleRetake}>
-              <RefreshCcw className="mr-2" /> Retake
+            <Button variant="outline" onClick={handleRetake}>
+              <RefreshCcw className="mr-2 h-4 w-4" /> Retake
             </Button>
-            <Button variant="default" disabled>
-              <Check className="mr-2" /> Photo Saved
+            <Button variant="secondary" disabled>
+              <Check className="mr-2 h-4 w-4" /> Photo Saved
             </Button>
           </>
         ) : (
           <Button type="button" onClick={handleCapture} disabled={!stream}>
-            <Camera className="mr-2" /> Capture Photo
+            <Camera className="mr-2 h-4 w-4" /> Capture Photo
           </Button>
         )}
       </div>

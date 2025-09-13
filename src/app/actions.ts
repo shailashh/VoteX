@@ -46,14 +46,7 @@ export async function submitForm(
   console.log('Location:', validatedFields.data.location);
   console.log('---------------------------');
   
-  // Here you would typically:
-  // 1. If a photo exists, upload the base64 string to a file storage (e.g., Firebase Storage)
-  // 2. Get the URL of the uploaded photo.
-  // 3. Look up the spreadsheet ID for the selected user from a database.
-  // 4. Use Google Sheets API to append a new row with all the data.
-  //    e.g., [new Date().toISOString(), fullName, age, address, photoUrl, location.latitude, location.longitude]
-
-  await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1500)); 
 
   return {
     message: `Data for ${validatedFields.data.fullName} submitted successfully!`,
