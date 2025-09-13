@@ -41,7 +41,6 @@ import {
   FileText,
   UserPlus,
   KeyRound,
-  Shield,
   Copy,
   Loader2,
   AlertTriangle,
@@ -72,6 +71,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { createSheetForUser } from '../actions';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
+import { VotexLogo } from '@/components/ui/votex-logo';
 
 const initialUsers = [
   {
@@ -308,7 +308,10 @@ export default function OwnerDashboard() {
           <Card className="mb-8">
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>User Management</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-6 w-6" />
+                  User Management
+                </CardTitle>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -364,7 +367,7 @@ export default function OwnerDashboard() {
                       </div>
                       <DialogFooter>
                         <Button type="button" onClick={handleAddUser}>
-                            <Shield className="mr-2 h-4 w-4" />
+                            <VotexLogo className="mr-2 h-4 w-4" />
                             Save User
                         </Button>
                       </DialogFooter>
@@ -534,5 +537,3 @@ export default function OwnerDashboard() {
     </>
   );
 }
-
-    

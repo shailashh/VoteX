@@ -5,7 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Send, AlertTriangle, ShieldCheck, User, MapPin } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, User, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
 
@@ -18,6 +18,7 @@ import { CameraCapture } from '@/components/camera-capture';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { useLocation, type Location } from '@/hooks/use-location';
+import { VotexLogo } from './ui/votex-logo';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -31,7 +32,7 @@ type FormData = z.infer<typeof formSchema>;
 const steps = [
   { id: 'Step 1', title: 'Personal Info', fields: ['fullName', 'age', 'address'], icon: User },
   { id: 'Step 2', title: 'Photo & Location', fields: ['photo'], icon: MapPin },
-  { id: 'Step 3', title: 'Review & Submit', fields: [], icon: ShieldCheck },
+  { id: 'Step 3', title: 'Review & Submit', fields: [], icon: VotexLogo },
 ];
 
 function Stepper({ currentStep }: { currentStep: number }) {
@@ -253,7 +254,7 @@ export default function DataEntryForm() {
                       <Input placeholder="Enter your full name" {...field} />
                     </FormControl>
                     <FormDescription className="flex items-center gap-2">
-                      <ShieldCheck className="w-3 h-3 text-muted-foreground" />
+                      <VotexLogo className="w-3 h-3 text-muted-foreground" />
                       Enter your legal name as it appears on official documents
                     </FormDescription>
                     <FormMessage />
@@ -404,5 +405,3 @@ export default function DataEntryForm() {
     </>
   );
 }
-
-    
