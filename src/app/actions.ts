@@ -28,7 +28,10 @@ async function getGoogleSheetsClient(creds: string) {
     const credentials = JSON.parse(creds);
     const auth = new google.auth.GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        scopes: [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive.file'
+        ],
     });
     return google.sheets({ version: 'v4', auth });
 }
@@ -137,8 +140,8 @@ export async function createSheetForUser(userName: string, userEmail: string, ma
             throw new Error("Failed to create new sheet.");
         }
 
-        // Grant viewer access to the user
-        const drive = google.drive({ version: 'v3', auth: sheets.auth });
+        // Grant writer access to the user
+        const drive = google.drive({ version: 'v3', auth: (sheets.auth as any) });
         await drive.permissions.create({
             fileId: newSheetId,
             requestBody: {
@@ -147,6 +150,10 @@ export async function createSheetForUser(userName: string, userEmail: string, ma
                 emailAddress: userEmail,
             }
         });
+
+        if (!masterSheetId) {
+            throw new Error("Master Sheet ID is not configured.");
+        }
         
         // Log it in the master sheet
         await sheets.spreadsheets.values.append({
@@ -171,6 +178,6 @@ export async function createSheetForUser(userName: string, userEmail: string, ma
 
     } catch (e: any) {
         console.error("Error creating sheet:", e);
-        return { status: 'error', message: e.message };
+        return { status: 'error', message: `Failed to create/share sheet: ${e.message}` };
     }
 }

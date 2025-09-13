@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Test, AlertTriangle } from 'lucide-react';
+import { Save, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ManageSheetsPage() {
@@ -81,9 +81,10 @@ export default function ManageSheetsPage() {
                                 <AlertDescription>
                                     <ol className="list-decimal list-inside space-y-2 mt-2">
                                         <li>Go to the Google Cloud Console and create a Service Account.</li>
-                                        <li>Enable the Google Sheets API for your project.</li>
+                                        <li>Enable the **Google Sheets API** and **Google Drive API** for your project.</li>
                                         <li>Download the JSON credentials for your service account.</li>
-                                        <li>Create a Google Sheet and share it with the service account&apos;s email address (found in the JSON file).</li>
+                                        <li>Create a Google Sheet to be your "Master Sheet" for logging user sheet creations.</li>
+                                        <li>Share this Master Sheet with the service account's email address (found in the JSON file) giving it "Editor" access.</li>
                                         <li>Paste the entire content of the JSON file below.</li>
                                         <li>Paste the ID of your master Google Sheet.</li>
                                     </ol>
