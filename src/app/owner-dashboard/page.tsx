@@ -30,22 +30,15 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Grid,
   Search,
   FileEdit,
-  ExternalLink,
   Trash2,
-  PlusCircle,
-  Database,
-  FileText,
   UserPlus,
   KeyRound,
   Copy,
-  Loader2,
   RotateCcw,
   Users,
   Shield,
-  ShieldCheck,
   Phone,
   RefreshCw,
 } from 'lucide-react';
@@ -71,15 +64,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { createSheetForUser } from '../actions';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
 import {
     getUsers,
     addUser,
     updateUser,
     deleteUser,
-    updateUserSubmissions,
-    updateUserSheet
 } from '../api/users/user-actions';
 
 
@@ -96,7 +86,6 @@ export default function OwnerDashboard() {
   const [newAadhaar, setNewAadhaar] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPhone, setNewUserPhone] = useState("");
-  const [isCreatingSheet, setIsCreatingSheet] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -195,38 +184,6 @@ export default function OwnerDashboard() {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: `${type} copied to clipboard.` });
   }
-
-  const handleAssignSheet = async (user: any) => {
-    setIsCreatingSheet(user.id);
-    const googleCreds = localStorage.getItem('googleApiCredentials');
-    const masterSheetId = localStorage.getItem('masterSheetId');
-
-    if (!googleCreds || !masterSheetId) {
-      toast({
-        title: "Configuration Missing",
-        description: "Please configure Google Sheets credentials and Master Sheet ID in 'Manage Sheets'.",
-        variant: "destructive"
-      });
-      setIsCreatingSheet(null);
-      return;
-    }
-
-    const result = await createSheetForUser(user.name, user.email, masterSheetId, googleCreds);
-
-    if (result.status === 'success' && result.sheetId) {
-        const sheetData = { id: result.sheetId, name: `User_Data_${user.name.replace(/\s/g, '_')}` };
-        try {
-            await updateUserSheet(user.id, sheetData);
-            setUsers(users.map(u => u.id === user.id ? { ...u, sheet: sheetData } : u));
-            toast({ title: "Sheet Created", description: `Sheet for ${user.name} created successfully.` });
-        } catch(e) {
-             toast({ title: "Error", description: "Failed to save sheet details to user.", variant: 'destructive' });
-        }
-    } else {
-        toast({ title: "Error", description: result.message, variant: 'destructive' });
-    }
-    setIsCreatingSheet(null);
-  };
   
   const handleDeleteUser = async (userId: number) => {
     try {
@@ -280,28 +237,6 @@ export default function OwnerDashboard() {
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl mx-auto">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Sheets
-                </CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{users.filter(u => u.sheet && u.status !== 'Deleted').length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Submissions
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalSubmissions}</div>
-              </CardContent>
-            </Card>
              <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -311,6 +246,26 @@ export default function OwnerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{activeUsers.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{users.filter(u => u.status === 'Active').length}</div>
+                </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Submissions
+                </CardTitle>
+                <Copy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalSubmissions}</div>
               </CardContent>
             </Card>
           </div>
@@ -391,7 +346,7 @@ export default function OwnerDashboard() {
                       </div>
                       <DialogFooter>
                         <Button type="button" onClick={handleAddUser}>
-                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            <UserPlus className="mr-2 h-4 w-4" />
                             Save User
                         </Button>
                       </DialogFooter>
@@ -405,7 +360,6 @@ export default function OwnerDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Assigned Sheet</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Submissions</TableHead>
                     <TableHead>Actions</TableHead>
@@ -414,21 +368,13 @@ export default function OwnerDashboard() {
                 <TableBody>
                   {activeUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
                         No users found.
                       </TableCell>
                     </TableRow>
                   )}
                   {activeUsers.map((user) => (
                     <TableRow key={user.id}>
-                      {isCreatingSheet === user.id ? (
-                        <TableCell colSpan={5} className="text-center">
-                          <div className="flex items-center justify-center gap-2 p-4">
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                            <span>Creating sheet for {user.name}...</span>
-                          </div>
-                        </TableCell>
-                      ) : (
                         <>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -465,21 +411,6 @@ export default function OwnerDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {user.sheet ? (
-                              <div>
-                                <div>{user.sheet.name}</div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <Grid className="h-3 w-3" />
-                                  <a href={`https://docs.google.com/spreadsheets/d/${user.sheet.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{user.sheet.id.substring(0,15)}...</a>
-                                </div>
-                              </div>
-                            ) : (
-                              <Button variant="outline" size="sm" onClick={() => handleAssignSheet(user)} disabled={isCreatingSheet === user.id}>
-                                  <PlusCircle className="mr-2 h-4 w-4" />Assign Sheet
-                              </Button>
-                            )}
-                          </TableCell>
-                          <TableCell>
                             <Badge
                               variant={
                                 user.status === 'Active' ? 'default' : 'secondary'
@@ -494,18 +425,13 @@ export default function OwnerDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium text-center">{user.submissions}</div>
+                            <div className="font-medium text-center">{user.submissions || 0}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
                                 <FileEdit className="h-4 w-4 text-blue-500" />
                               </Button>
-                              {user.sheet && (
-                                <Button variant="ghost" size="icon" onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${user.sheet.id}`, "_blank")}>
-                                  <ExternalLink className="h-4 w-4 text-yellow-500" />
-                                </Button>
-                              )}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon">
@@ -530,7 +456,6 @@ export default function OwnerDashboard() {
                             </div>
                           </TableCell>
                         </>
-                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -628,9 +553,3 @@ export default function OwnerDashboard() {
     </>
   );
 }
-
-    
-
-    
-
-    

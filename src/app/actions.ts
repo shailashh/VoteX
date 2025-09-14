@@ -158,59 +158,10 @@ type SheetActionState = {
 };
 
 export async function createSheetForUser(userName: string, userEmail: string, masterSheetId: string, googleCreds: string): Promise<SheetActionState> {
-    try {
-        const sheets = await getGoogleSheetsClient(googleCreds);
-        const newSheet = await sheets.spreadsheets.create({
-            requestBody: {
-                properties: {
-                    title: `User_Data_${userName.replace(/\s/g, '_')}_${Date.now()}`
-                }
-            }
-        });
-
-        const newSheetId = newSheet.data.spreadsheetId;
-        if (!newSheetId) {
-            throw new Error("Failed to create new sheet.");
-        }
-
-        // Grant writer access to the user
-        const drive = google.drive({ version: 'v3', auth: (sheets.auth as any) });
-        await drive.permissions.create({
-            fileId: newSheetId,
-            requestBody: {
-                role: 'writer',
-                type: 'user',
-                emailAddress: userEmail,
-            }
-        });
-
-        if (!masterSheetId) {
-            throw new Error("Master Sheet ID is not configured.");
-        }
-        
-        // Log it in the master sheet
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: masterSheetId,
-            range: 'A1',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-                values: [[
-                    new Date().toISOString(),
-                    userName,
-                    userEmail,
-                    newSheet.data.spreadsheetUrl
-                ]]
-            }
-        });
-        
-        return {
-            status: 'success',
-            message: 'Sheet created and linked.',
-            sheetId: newSheetId,
-        };
-
-    } catch (e: any) {
-        console.error("Error creating sheet:", e);
-        return { status: 'error', message: `Failed to create/share sheet: ${e.message}` };
-    }
+    // This function is no longer needed as we are using a single sheet.
+    // We can keep it here but it won't be called from the UI.
+    return {
+        status: 'success',
+        message: 'This feature is disabled.',
+    };
 }

@@ -49,7 +49,7 @@ export async function addUser(newUser: any) {
     id: users.length > 0 ? Math.max(...users.map((u: any) => u.id)) + 1 : 1,
     ...newUser,
     avatar: newUser.name.split(' ').map((n: string) => n[0]).join(''),
-    sheet: null,
+    sheet: null, // Sheet is no longer assigned per user
     status: 'Inactive',
     submissions: 0,
   };
@@ -103,13 +103,11 @@ export async function updateUserSubmissions(aadhaar: string) {
 }
 
 export async function updateUserSheet(userId: number, sheet: any) {
+    // This function is no longer needed as we are using a single sheet.
+    // Kept to avoid breaking imports, but it does nothing.
     const users = await readUsers();
-    const userIndex = users.findIndex((u: any) => u.id === userId);
-    if (userIndex > -1) {
-        users[userIndex].sheet = sheet;
-        await writeUsers(users);
-    }
-    return users[userIndex] || null;
+    const user = users.find((u: any) => u.id === userId);
+    return user || null;
 }
 
 export async function loginPartner(aadhaar: string, password: string) {

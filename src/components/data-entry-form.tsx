@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Loader2, Send, AlertTriangle, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
-import { updateUserStatus, updateUserSubmissions, getUser } from '@/app/api/users/user-actions';
+import { updateUserStatus, updateUserSubmissions } from '@/app/api/users/user-actions';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,22 +135,15 @@ export default function DataEntryForm() {
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
       const googleCreds = localStorage.getItem('googleApiCredentials');
-      let sheetId: string | null = null;
+      const masterSheetId = localStorage.getItem('masterSheetId');
       
-      if (loggedInUserAadhaar) {
-          const currentUser = await getUser(loggedInUserAadhaar);
-          if (currentUser && currentUser.sheet) {
-              sheetId = currentUser.sheet.id;
-          }
-      }
-
-      if (!sheetId) {
-        toast({ title: 'Error', description: "No sheet assigned to your user account. Contact the owner.", variant: 'destructive' });
+      if (!masterSheetId || !googleCreds) {
+        toast({ title: 'Error', description: "Sheet is not configured. Please contact the owner.", variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
 
-      const result = await submitForm(data, sheetId, googleCreds, loggedInUserAadhaar, location); 
+      const result = await submitForm(data, masterSheetId, googleCreds, loggedInUserAadhaar, location); 
       
       if (result.status === 'success') {
         if (loggedInUserAadhaar) {
