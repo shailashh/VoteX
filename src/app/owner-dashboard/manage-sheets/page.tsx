@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,16 @@ export default function ManageSheetsPage() {
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
 
+    const loadSettings = useCallback(() => {
+        const savedCreds = localStorage.getItem('googleApiCredentials');
+        const savedSheetId = localStorage.getItem('masterSheetId');
+        if (savedCreds) {
+            setGoogleCreds(savedCreds);
+        }
+        if (savedSheetId) {
+            setMasterSheetId(savedSheetId);
+        }
+    }, []);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -28,32 +38,37 @@ export default function ManageSheetsPage() {
             router.push('/');
         } else {
             setIsAuthorized(true);
-            const savedCreds = localStorage.getItem('googleApiCredentials');
-            const savedSheetId = localStorage.getItem('masterSheetId');
-            if (savedCreds) {
-                setGoogleCreds(savedCreds);
-            }
-            if (savedSheetId) {
-                setMasterSheetId(savedSheetId);
-            }
+            loadSettings();
         }
-    }, [router]);
+    }, [router, loadSettings]);
 
     const handleSave = () => {
         setSaveStatus('idle');
         setErrorMessage('');
         
-        if (!masterSheetId.trim()) {
+        const trimmedSheetId = masterSheetId.trim();
+        if (!trimmedSheetId) {
             setErrorMessage('Master Sheet ID is required.');
+            setSaveStatus('error');
+            return;
+        }
+
+        const trimmedCreds = googleCreds.trim();
+        if (!trimmedCreds) {
+            setErrorMessage('Google API Credentials are required.');
             setSaveStatus('error');
             return;
         }
 
         try {
             // Validate JSON format
-            JSON.parse(googleCreds);
-            localStorage.setItem('googleApiCredentials', googleCreds);
-            localStorage.setItem('masterSheetId', masterSheetId);
+            JSON.parse(trimmedCreds);
+            localStorage.setItem('googleApiCredentials', trimmedCreds);
+            localStorage.setItem('masterSheetId', trimmedSheetId);
+            
+            // Reload state from localstorage to ensure UI is in sync
+            loadSettings();
+
             toast({
                 title: 'Settings Saved',
                 description: 'Google Sheets credentials and Master Sheet ID have been updated.',
