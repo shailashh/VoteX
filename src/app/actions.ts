@@ -86,7 +86,7 @@ export async function submitForm(
   if (!sheetId || !googleCreds) {
      console.error('Sheet not configured. Sheet ID:', sheetId, 'Creds exist:', !!googleCreds);
      return {
-        message: 'Sheet is not configured. Please contact the owner.',
+        message: 'Sheet is not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
     };
   }
