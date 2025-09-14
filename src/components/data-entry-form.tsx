@@ -93,12 +93,13 @@ export default function DataEntryForm() {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    if(typeof navigator !== 'undefined') {
-      setIsOnline(navigator.onLine);
-    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
