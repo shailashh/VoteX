@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { LogOut, Menu, User, Database, Settings, ShieldCheck } from 'lucide-react';
+import { LogOut, Menu, User, Database, Settings, ShieldCheck, Copy } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Sheet,
@@ -11,18 +11,40 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { updateUserStatus } from '@/app/api/users/user-actions';
+import { useEffect, useState, useCallback } from 'react';
+import { updateUserStatus, getUser } from '@/app/api/users/user-actions';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [submissionCount, setSubmissionCount] = useState<number | null>(null);
 
-  useEffect(() => {
+  const fetchUserSubmissions = useCallback(async () => {
     const role = localStorage.getItem('userRole');
     setUserRole(role);
+
+    if (role === 'partner') {
+        const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+        if (loggedInUserAadhaar) {
+            const user = await getUser(loggedInUserAadhaar);
+            if (user) {
+                setSubmissionCount(user.submissions || 0);
+            }
+        }
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUserSubmissions();
+    
+    // Add a listener to refetch on focus to catch updates from other tabs
+    window.addEventListener('focus', fetchUserSubmissions);
+    return () => {
+      window.removeEventListener('focus', fetchUserSubmissions);
+    };
+
+  }, [fetchUserSubmissions, pathname]);
 
   const handleLogout = async () => {
     const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
@@ -38,25 +60,19 @@ export default function Header() {
     router.push('/');
   };
 
-  const isDataEntry = pathname === '/data-entry';
-  const isDashboard = pathname === '/owner-dashboard';
-  const isManageSheets = pathname === '/owner-dashboard/manage-sheets';
-
-  const canViewDashboard = userRole === 'owner';
-
   const navLinks = [
     { href: '/data-entry', label: 'Data Entry', icon: User, show: userRole === 'partner' },
     {
       href: '/owner-dashboard',
       label: 'Owner Dashboard',
       icon: Database,
-      show: canViewDashboard,
+      show: userRole === 'owner',
     },
     {
       href: '/owner-dashboard/manage-sheets',
       label: 'Manage Sheets',
       icon: Settings,
-      show: canViewDashboard,
+      show: userRole === 'owner',
     },
   ];
 
@@ -126,6 +142,14 @@ export default function Header() {
                             </Link>
                            </SheetClose> 
                         ))}
+                        {userRole === 'partner' && submissionCount !== null && (
+                            <div className="px-3 py-2 text-muted-foreground mt-2 border-t">
+                                <div className="flex items-center gap-3 rounded-lg text-base font-medium pt-3">
+                                    <Copy className="h-5 w-5 text-primary" />
+                                    <span>Total Submits: <strong>{submissionCount}</strong></span>
+                                </div>
+                            </div>
+                        )}
                     </nav>
                     <div className="mt-auto p-4 border-t">
                         <SheetClose asChild>
