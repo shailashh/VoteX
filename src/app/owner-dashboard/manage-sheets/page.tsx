@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Save, AlertTriangle } from 'lucide-react';
+import { Save, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ManageSheetsPage() {
@@ -18,6 +18,7 @@ export default function ManageSheetsPage() {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [serviceAccount, setServiceAccount] = useState('');
     const [masterSheetId, setMasterSheetId] = useState('');
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -37,6 +38,7 @@ export default function ManageSheetsPage() {
     }, [router]);
 
     const handleSave = () => {
+        setSaveSuccess(false);
         if (!serviceAccount.trim() || !masterSheetId.trim()) {
             toast({
                 title: 'Error',
@@ -53,6 +55,7 @@ export default function ManageSheetsPage() {
                 title: 'Saved!',
                 description: 'Your Google Sheets settings have been saved successfully.',
             });
+            setSaveSuccess(true);
         } catch (error) {
             console.error("Failed to parse service account JSON:", error);
             toast({
@@ -96,13 +99,23 @@ export default function ManageSheetsPage() {
                                 </AlertDescription>
                             </Alert>
 
+                            {saveSuccess && (
+                                <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <AlertTitle>Settings Saved</AlertTitle>
+                                    <AlertDescription>
+                                       Your Google Sheets settings have been successfully stored in your browser. You can now navigate to the data entry page.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
                             <div className="space-y-2">
                                 <Label htmlFor="service-account">Service Account JSON</Label>
                                 <Textarea
                                     id="service-account"
                                     placeholder='Paste your JSON credentials here...'
                                     value={serviceAccount}
-                                    onChange={(e) => setServiceAccount(e.target.value)}
+                                    onChange={(e) => { setServiceAccount(e.target.value); setSaveSuccess(false); }}
                                     rows={10}
                                 />
                             </div>
@@ -112,7 +125,7 @@ export default function ManageSheetsPage() {
                                     id="master-sheet-id"
                                     placeholder="Enter the ID of your Google Sheet"
                                     value={masterSheetId}
-                                    onChange={(e) => setMasterSheetId(e.target.value)}
+                                    onChange={(e) => { setMasterSheetId(e.target.value); setSaveSuccess(false); }}
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     You can find the ID in the sheet URL: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
