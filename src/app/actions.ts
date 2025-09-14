@@ -152,8 +152,10 @@ export async function submitForm(
         return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
     }
   } else {
-     await new Promise(resolve => setTimeout(resolve, 1500)); 
-     console.log("Submission successful (local simulation). No Sheet ID or creds provided.");
+     return {
+        message: 'Sheet is not configured. Please contact the owner.',
+        status: 'error',
+    };
   }
 
 
