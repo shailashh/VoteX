@@ -83,10 +83,10 @@ export default function ManageSheetsPage() {
                                         <li>Go to the Google Cloud Console and create a Service Account.</li>
                                         <li>Enable the **Google Sheets API** and **Google Drive API** for your project.</li>
                                         <li>Download the JSON credentials for your service account.</li>
-                                        <li>Create a Google Sheet to be your "Master Sheet" for logging user sheet creations.</li>
-                                        <li>Share this Master Sheet with the service account's email address (found in the JSON file) giving it "Editor" access.</li>
-                                        <li>Paste the entire content of the JSON file below.</li>
-                                        <li>Paste the ID of your master Google Sheet.</li>
+                                        <li>Create a Google Sheet where all the form data will be saved.</li>
+                                        <li>Share this Google Sheet with the service account's email address (found in the JSON file) giving it "Editor" access.</li>
+                                        <li>Paste the entire content of the JSON credentials file below.</li>
+                                        <li>Paste the ID of your Google Sheet.</li>
                                     </ol>
                                 </AlertDescription>
                             </Alert>
@@ -102,10 +102,10 @@ export default function ManageSheetsPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="master-sheet-id">Master Google Sheet ID</Label>
+                                <Label htmlFor="master-sheet-id">Google Sheet ID</Label>
                                 <Input
                                     id="master-sheet-id"
-                                    placeholder="Enter the ID of your main Google Sheet"
+                                    placeholder="Enter the ID of your Google Sheet"
                                     value={masterSheetId}
                                     onChange={(e) => setMasterSheetId(e.target.value)}
                                 />
