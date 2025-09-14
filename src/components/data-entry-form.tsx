@@ -139,14 +139,16 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+      const storedCreds = localStorage.getItem('googleApiCredentials');
+      const storedSheetId = localStorage.getItem('masterSheetId');
       
-      if (!masterSheetId || !googleCreds) {
+      if (!storedSheetId || !storedCreds) {
         toast({ title: 'Error', description: "Sheet is not configured. Please contact the owner.", variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
 
-      const result = await submitForm(data, masterSheetId, googleCreds, loggedInUserAadhaar, location); 
+      const result = await submitForm(data, storedSheetId, storedCreds, loggedInUserAadhaar, location); 
       
       if (result.status === 'success') {
         if (loggedInUserAadhaar) {
