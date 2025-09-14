@@ -27,9 +27,13 @@ export default function Header() {
     if (role === 'partner') {
         const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
         if (loggedInUserAadhaar) {
-            const user = await getUser(loggedInUserAadhaar);
-            if (user) {
-                setSubmissionCount(user.submissions || 0);
+            try {
+                const user = await getUser(loggedInUserAadhaar);
+                if (user) {
+                    setSubmissionCount(user.submissions || 0);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user submissions:", error);
             }
         }
     }
@@ -44,7 +48,7 @@ export default function Header() {
       window.removeEventListener('focus', fetchUserSubmissions);
     };
 
-  }, [fetchUserSubmissions, pathname]);
+  }, [fetchUserSubmissions]);
 
   const handleLogout = async () => {
     const loggedInUserAadhaar = localStorage.getItem('loggedInUser');

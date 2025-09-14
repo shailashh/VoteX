@@ -218,9 +218,15 @@ export default function OwnerDashboard() {
                             user.email?.toLowerCase().includes(searchLower) ||
                             user.phone?.includes(searchTerm) ||
                             user.aadhaar?.includes(searchTerm);
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+      const matchesStatus = statusFilter === 'all' || (user.status !== 'Deleted' && statusFilter === 'active_inactive') || user.status === statusFilter;
+      
+      if (statusFilter === 'all') return user.status !== 'Deleted';
+      if (statusFilter === 'Active') return user.status === 'Active';
+      if (statusFilter === 'Inactive') return user.status === 'Inactive';
+
+      return matchesSearch;
+
+    }).filter(user => user.status !== 'Deleted');
   }, [users, searchTerm, statusFilter]);
 
   if (isLoading) {
@@ -292,7 +298,7 @@ export default function OwnerDashboard() {
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="all">All Users</SelectItem>
                       <SelectItem value="Active">Active</SelectItem>
                       <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
