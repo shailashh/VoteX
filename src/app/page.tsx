@@ -202,7 +202,7 @@ export default function LoginPage() {
             </Dialog>
         </CardContent>
          <CardFooter className="flex flex-col items-center justify-center pt-6 text-sm text-muted-foreground gap-2">
-          <p>Helpline: +91 1234567890</p>
+          <p>Helpline: 9067488062 / 7021417737</p>
           <p>Built by Shai Developers</p>
         </CardFooter>
       </Card>
