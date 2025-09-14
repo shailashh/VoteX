@@ -68,12 +68,17 @@ export async function submitForm(
   }
   
   const formData = validatedFields.data;
+  
+  let finalAddress = formData.address;
+  if (location) {
+    finalAddress += ` (Location: ${location.latitude}, ${location.longitude})`;
+  }
 
   console.log('--- New Form Submission ---');
   console.log('Voter Type:', formData.voterType);
   console.log('Full Name:', formData.fullName);
   console.log('Mobile:', formData.mobile);
-  console.log('Address:', formData.address);
+  console.log('Address:', finalAddress);
   if ('rspNo' in formData && formData.rspNo) {
       console.log('RSP No:', formData.rspNo);
   }
@@ -82,7 +87,6 @@ export async function submitForm(
   }
   console.log('Front Photo captured:', !!formData.documentPhotoFront);
   console.log('Back Photo captured:', !!formData.documentPhotoBack);
-  console.log('Location:', location);
   console.log('Submitted by:', userAadhaar);
   console.log('---------------------------');
   
@@ -96,7 +100,7 @@ export async function submitForm(
             formData.voterType,
             formData.fullName,
             formData.mobile,
-            formData.address,
+            finalAddress,
             'rspNo' in formData ? formData.rspNo : '',
             'reason' in formData ? formData.reason : '',
             userAadhaar,
