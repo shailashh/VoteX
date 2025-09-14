@@ -203,7 +203,7 @@ export default function LoginPage() {
         </CardContent>
          <CardFooter className="flex flex-col items-center justify-center pt-6 text-sm text-muted-foreground gap-2">
           <p>Helpline: 9067488062 / 7021417737</p>
-          <p>Built by Shai Developers</p>
+          <p>Built by Shailesh Developers</p>
         </CardFooter>
       </Card>
     </main>
