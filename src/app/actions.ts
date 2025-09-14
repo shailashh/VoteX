@@ -99,7 +99,7 @@ export async function submitForm(
             formData.address,
             'rspNo' in formData ? formData.rspNo : '',
             'reason' in formData ? formData.reason : '',
-            `${location?.latitude}, ${location?.longitude}`,
+            location ? `${location.latitude}, ${location.longitude}` : 'Not Available',
             userAadhaar,
             formData.documentPhotoFront ? 'Yes' : 'No',
             formData.documentPhotoBack ? 'Yes' : 'No',
