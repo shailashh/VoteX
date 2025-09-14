@@ -55,9 +55,7 @@ export default function DataEntryForm() {
   const { toast } = useToast();
   const { location, error: locationError, startTracking, stopTracking } = useLocation();
   const [isOnline, setIsOnline] = useState(true);
-  const [googleCreds, setGoogleCreds] = useState<string | null>(null);
-  const [masterSheetId, setMasterSheetId] = useState<string | null>(null);
-
+  
   const form = useForm<any>({ // Using `any` due to complexity of discriminated union with react-hook-form
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -87,9 +85,6 @@ export default function DataEntryForm() {
   
   useEffect(() => {
     startTracking();
-     // Load credentials from localStorage when component mounts
-    setGoogleCreds(localStorage.getItem('googleApiCredentials'));
-    setMasterSheetId(localStorage.getItem('masterSheetId'));
     return () => stopTracking();
   }, [startTracking, stopTracking]);
 
@@ -139,16 +134,8 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
-      const storedCreds = localStorage.getItem('googleApiCredentials');
-      const storedSheetId = localStorage.getItem('masterSheetId');
-      
-      if (!storedSheetId || !storedCreds) {
-        toast({ title: 'Error', description: "Sheet is not configured. Please contact the owner.", variant: 'destructive' });
-        setIsSubmitting(false);
-        return;
-      }
 
-      const result = await submitForm(data, storedSheetId, storedCreds, loggedInUserAadhaar, location); 
+      const result = await submitForm(data, loggedInUserAadhaar, location); 
       
       if (result.status === 'success') {
         if (loggedInUserAadhaar) {

@@ -53,8 +53,6 @@ async function getGoogleSheetsClient(creds: string) {
 
 export async function submitForm(
   data: any,
-  sheetId: string | null,
-  googleCreds: string | null,
   userAadhaar: string | null,
   location: { latitude: number, longitude: number } | null
 ): Promise<FormState> {
@@ -83,6 +81,15 @@ export async function submitForm(
     }
   }
 
+  const sheetId = process.env.MASTER_SHEET_ID;
+  const googleCreds = process.env.GOOGLE_API_CREDENTIALS;
+  
+  if (!sheetId || !googleCreds) {
+     return {
+        message: 'Sheet is not configured. Please contact the owner and set up environment variables.',
+        status: 'error',
+    };
+  }
 
   console.log('--- New Form Submission ---');
   console.log('Voter Type:', formData.voterType);
@@ -101,61 +108,54 @@ export async function submitForm(
   console.log('Submitted by Name:', submitterName);
   console.log('---------------------------');
   
-  if (sheetId && googleCreds) {
-    try {
-        const sheets = await getGoogleSheetsClient(googleCreds);
-        const range = 'A1';
-        
-        const values = [[
-            new Date().toISOString(),
-            formData.voterType,
-            formData.fullName,
-            formData.mobile,
-            finalAddress,
-            'rspNo' in formData ? formData.rspNo || '' : '',
-            'reason' in formData ? formData.reason || '' : '',
-            userAadhaar || '',
-            submitterName || '',
-            formData.documentPhotoFront ? 'Yes' : 'No',
-            formData.documentPhotoBack ? 'Yes' : 'No',
-        ]];
+  try {
+      const sheets = await getGoogleSheetsClient(googleCreds);
+      const range = 'A1';
+      
+      const values = [[
+          new Date().toISOString(),
+          formData.voterType,
+          formData.fullName,
+          formData.mobile,
+          finalAddress,
+          'rspNo' in formData ? formData.rspNo || '' : '',
+          'reason' in formData ? formData.reason || '' : '',
+          userAadhaar || '',
+          submitterName || '',
+          formData.documentPhotoFront ? 'Yes' : 'No',
+          formData.documentPhotoBack ? 'Yes' : 'No',
+      ]];
 
-        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo?', 'Back Photo?'];
+      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo?', 'Back Photo?'];
 
-        // Check if header exists
-        const headerResponse = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'A1:K1',
-        });
+      // Check if header exists
+      const headerResponse = await sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: 'A1:K1',
+      });
 
-        if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
-            await sheets.spreadsheets.values.update({
-                spreadsheetId: sheetId,
-                range: 'A1',
-                valueInputOption: 'USER_ENTERED',
-                requestBody: {
-                    values: [headerRow],
-                },
-            });
-        }
-        
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range,
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-                values,
-            },
-        });
-    } catch(e: any) {
-        console.error("Error writing to google sheet: ", e);
-        return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
-    }
-  } else {
-     return {
-        message: 'Sheet is not configured. Please contact the owner.',
-        status: 'error',
-    };
+      if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
+          await sheets.spreadsheets.values.update({
+              spreadsheetId: sheetId,
+              range: 'A1',
+              valueInputOption: 'USER_ENTERED',
+              requestBody: {
+                  values: [headerRow],
+              },
+          });
+      }
+      
+      await sheets.spreadsheets.values.append({
+          spreadsheetId: sheetId,
+          range,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+              values,
+          },
+      });
+  } catch(e: any) {
+      console.error("Error writing to google sheet: ", e);
+      return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
   }
 
 
