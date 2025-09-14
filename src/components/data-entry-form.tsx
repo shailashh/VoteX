@@ -134,8 +134,10 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
+      const googleCreds = localStorage.getItem('googleApiCredentials');
+      const sheetId = localStorage.getItem('masterSheetId');
 
-      const result = await submitForm(data, loggedInUserAadhaar, location); 
+      const result = await submitForm(data, loggedInUserAadhaar, location, googleCreds, sheetId); 
       
       if (result.status === 'success') {
         if (loggedInUserAadhaar) {
