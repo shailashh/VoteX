@@ -8,7 +8,19 @@
     "password": "nii4g2mc",
     "avatar": "s",
     "sheet": null,
-    "status": "Active",
+    "status": "Inactive",
+    "submissions": 0
+  },
+  {
+    "id": 3,
+    "name": "Nilesh gupta ",
+    "email": "user2@example.com",
+    "aadhaar": "613139564197",
+    "phone": "7823810829",
+    "password": "7bjw8dok",
+    "avatar": "Ng",
+    "sheet": null,
+    "status": "Inactive",
     "submissions": 0
   }
 ]

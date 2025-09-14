@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Building, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -201,6 +201,10 @@ export default function LoginPage() {
               </DialogContent>
             </Dialog>
         </CardContent>
+         <CardFooter className="flex flex-col items-center justify-center pt-6 text-sm text-muted-foreground gap-2">
+          <p>Helpline: +91 1234567890</p>
+          <p>Built by Shai Developers</p>
+        </CardFooter>
       </Card>
     </main>
   );
