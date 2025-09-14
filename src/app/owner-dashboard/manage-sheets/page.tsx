@@ -37,22 +37,27 @@ export default function ManageSheetsPage() {
     }, [router]);
 
     const handleSave = () => {
+        if (!serviceAccount.trim() || !masterSheetId.trim()) {
+            toast({
+                title: 'Error',
+                description: 'Please provide both Service Account JSON and Google Sheet ID.',
+                variant: 'destructive',
+            });
+            return;
+        }
         try {
-            if (serviceAccount) {
-                JSON.parse(serviceAccount);
-                localStorage.setItem('googleApiCredentials', serviceAccount);
-            }
-            if (masterSheetId) {
-                localStorage.setItem('masterSheetId', masterSheetId);
-            }
+            JSON.parse(serviceAccount);
+            localStorage.setItem('googleApiCredentials', serviceAccount);
+            localStorage.setItem('masterSheetId', masterSheetId);
             toast({
                 title: 'Saved!',
-                description: 'Your Google Sheets settings have been saved.',
+                description: 'Your Google Sheets settings have been saved successfully.',
             });
         } catch (error) {
+            console.error("Failed to parse service account JSON:", error);
             toast({
                 title: 'Invalid JSON',
-                description: 'The service account credentials are not valid JSON.',
+                description: 'The service account credentials are not valid JSON. Please copy the entire file content.',
                 variant: 'destructive',
             });
         }
