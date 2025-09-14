@@ -92,9 +92,9 @@ export default function Header() {
             <span className="text-sm text-gray-600 hidden sm:block">
               Welcome, {userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User'}
             </span>
-            <Button variant="outline" onClick={handleLogout} className="hidden sm:inline-flex">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Logout</span>
             </Button>
             <div className="md:hidden">
               <Sheet>
@@ -127,12 +127,6 @@ export default function Header() {
                            </SheetClose> 
                         ))}
                     </nav>
-                    <div className="mt-auto p-4 border-t">
-                       <Button variant="outline" onClick={handleLogout} className="w-full">
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Logout
-                        </Button>
-                    </div>
                 </SheetContent>
               </Sheet>
             </div>
