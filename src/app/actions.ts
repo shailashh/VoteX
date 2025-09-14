@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { google } from 'googleapis';
+import { getUser } from './api/users/user-actions';
 
 const baseSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -74,6 +75,15 @@ export async function submitForm(
     finalAddress += ` (Location: ${location.latitude}, ${location.longitude})`;
   }
 
+  let submitterName = '';
+  if(userAadhaar) {
+    const user = await getUser(userAadhaar);
+    if (user) {
+        submitterName = user.name;
+    }
+  }
+
+
   console.log('--- New Form Submission ---');
   console.log('Voter Type:', formData.voterType);
   console.log('Full Name:', formData.fullName);
@@ -87,7 +97,8 @@ export async function submitForm(
   }
   console.log('Front Photo captured:', !!formData.documentPhotoFront);
   console.log('Back Photo captured:', !!formData.documentPhotoBack);
-  console.log('Submitted by:', userAadhaar);
+  console.log('Submitted by Aadhaar:', userAadhaar);
+  console.log('Submitted by Name:', submitterName);
   console.log('---------------------------');
   
   if (sheetId && googleCreds) {
@@ -104,16 +115,17 @@ export async function submitForm(
             'rspNo' in formData ? formData.rspNo : '',
             'reason' in formData ? formData.reason : '',
             userAadhaar,
+            submitterName,
             formData.documentPhotoFront ? 'Yes' : 'No',
             formData.documentPhotoBack ? 'Yes' : 'No',
         ]];
 
-        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By', 'Front Photo?', 'Back Photo?'];
+        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo?', 'Back Photo?'];
 
         // Check if header exists
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'A1:J1',
+            range: 'A1:K1',
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
