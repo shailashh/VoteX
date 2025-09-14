@@ -3,13 +3,24 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ManageSheetsPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [googleCreds, setGoogleCreds] = useState('');
+    const [masterSheetId, setMasterSheetId] = useState('');
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
+
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -17,11 +28,51 @@ export default function ManageSheetsPage() {
             router.push('/');
         } else {
             setIsAuthorized(true);
+            const savedCreds = localStorage.getItem('googleApiCredentials');
+            const savedSheetId = localStorage.getItem('masterSheetId');
+            if (savedCreds) {
+                setGoogleCreds(savedCreds);
+            }
+            if (savedSheetId) {
+                setMasterSheetId(savedSheetId);
+            }
         }
     }, [router]);
 
+    const handleSave = () => {
+        setSaveStatus('idle');
+        setErrorMessage('');
+        
+        if (!masterSheetId.trim()) {
+            setErrorMessage('Master Sheet ID is required.');
+            setSaveStatus('error');
+            return;
+        }
+
+        try {
+            // Validate JSON format
+            JSON.parse(googleCreds);
+            localStorage.setItem('googleApiCredentials', googleCreds);
+            localStorage.setItem('masterSheetId', masterSheetId);
+            toast({
+                title: 'Settings Saved',
+                description: 'Google Sheets credentials and Master Sheet ID have been updated.',
+            });
+            setSaveStatus('success');
+        } catch (error) {
+            setErrorMessage('Invalid JSON format in Google API Credentials. Please paste the full, unmodified JSON content.');
+            setSaveStatus('error');
+            console.error('Failed to parse and save Google credentials:', error);
+            toast({
+                title: 'Error Saving Settings',
+                description: 'The provided Google API Credentials are not valid JSON.',
+                variant: 'destructive',
+            });
+        }
+    };
+    
     if (!isAuthorized) {
-        return null;
+        return null; // or a loading spinner
     }
 
     return (
@@ -33,51 +84,53 @@ export default function ManageSheetsPage() {
                         <CardHeader>
                             <CardTitle>Manage Google Sheets</CardTitle>
                             <CardDescription>
-                                Configure Google Sheets integration using environment variables.
+                                Securely store your Google API credentials and Master Sheet ID. This information is saved only in your browser's local storage.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <Alert variant="default">
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertTitle>Important: Configuration has moved!</AlertTitle>
-                                <AlertDescription>
-                                    <p className="mb-4">
-                                        For better security and reliability, Google Sheets settings are no longer stored in your browser. They must be configured using **Environment Variables** in your project deployment settings.
-                                    </p>
-                                    <ol className="list-decimal list-inside space-y-3">
-                                        <li>
-                                            <strong>Create a Service Account & JSON Credentials:</strong>
-                                            <ul className="list-disc list-inside pl-5 mt-1 text-xs text-muted-foreground">
-                                                <li>Go to the Google Cloud Console and create a Service Account.</li>
-                                                <li>Enable the **Google Sheets API** and **Google Drive API**.</li>
-                                                <li>Download the JSON credentials file for your service account.</li>
-                                            </ul>
-                                        </li>
-                                        <li>
-                                            <strong>Set up your Google Sheet:</strong>
-                                            <ul className="list-disc list-inside pl-5 mt-1 text-xs text-muted-foreground">
-                                                <li>Create a new Google Sheet where all form data will be saved.</li>
-                                                <li>Share this sheet with the service account's email (found in the JSON file) and give it "Editor" access.</li>
-                                            </ul>
-                                        </li>
-                                        <li>
-                                            <strong>Set Environment Variables:</strong>
-                                            <p className="text-xs text-muted-foreground mt-1">In your hosting environment (like Firebase App Hosting), set the following two variables:</p>
-                                            <div className="space-y-2 mt-2 font-mono text-xs bg-muted p-3 rounded-md">
-                                                <p>
-                                                    <span className="font-semibold">MASTER_SHEET_ID</span>="<span className="text-primary">[Your Google Sheet ID]</span>"
-                                                </p>
-                                                <p>
-                                                    <span className="font-semibold">GOOGLE_API_CREDENTIALS</span>="<span className="text-primary">[Paste the entire content of the JSON credentials file here]</span>"
-                                                </p>
-                                            </div>
-                                             <p className="text-xs text-muted-foreground mt-2">
-                                                The Sheet ID can be found in the sheet's URL: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
-                                            </p>
-                                        </li>
-                                    </ol>
-                                </AlertDescription>
-                            </Alert>
+                           {saveStatus === 'success' && (
+                                <Alert variant="default" className="bg-green-50 border-green-200">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <AlertTitle className="text-green-800">Settings Saved Successfully!</AlertTitle>
+                                    <AlertDescription className="text-green-700">
+                                        Your Google Sheets configuration has been updated.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {saveStatus === 'error' && (
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Error Saving</AlertTitle>
+                                    <AlertDescription>{errorMessage}</AlertDescription>
+                                </Alert>
+                            )}
+                            <div className="space-y-2">
+                                <Label htmlFor="master-sheet-id">Master Sheet ID</Label>
+                                <Input
+                                    id="master-sheet-id"
+                                    placeholder="Enter the ID of your main Google Sheet"
+                                    value={masterSheetId}
+                                    onChange={(e) => setMasterSheetId(e.target.value)}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    The ID is the long string in the sheet's URL: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
+                                </p>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="google-creds">Google API Credentials (JSON)</Label>
+                                <Textarea
+                                    id="google-creds"
+                                    placeholder="Paste the entire content of your service account's JSON credentials file here."
+                                    value={googleCreds}
+                                    onChange={(e) => setGoogleCreds(e.target.value)}
+                                    rows={10}
+                                    className="font-mono text-xs"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Ensure you have enabled the Google Sheets API and Google Drive API for your service account.
+                                </p>
+                            </div>
+                            <Button onClick={handleSave}>Save Settings</Button>
                         </CardContent>
                     </Card>
                 </div>

@@ -54,7 +54,9 @@ async function getGoogleSheetsClient(creds: string) {
 export async function submitForm(
   data: any,
   userAadhaar: string | null,
-  location: { latitude: number, longitude: number } | null
+  location: { latitude: number, longitude: number } | null,
+  googleCreds: string | null,
+  sheetId: string | null,
 ): Promise<FormState> {
   const validatedFields = formSchema.safeParse(data);
 
@@ -81,12 +83,10 @@ export async function submitForm(
     }
   }
 
-  const sheetId = process.env.MASTER_SHEET_ID;
-  const googleCreds = process.env.GOOGLE_API_CREDENTIALS;
-  
   if (!sheetId || !googleCreds) {
+     console.error('Sheet not configured. Sheet ID:', sheetId, 'Creds exist:', !!googleCreds);
      return {
-        message: 'Sheet is not configured. Please contact the owner and set up environment variables.',
+        message: 'Sheet is not configured. Please contact the owner.',
         status: 'error',
     };
   }
