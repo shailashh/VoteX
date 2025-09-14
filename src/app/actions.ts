@@ -99,18 +99,17 @@ export async function submitForm(
             formData.address,
             'rspNo' in formData ? formData.rspNo : '',
             'reason' in formData ? formData.reason : '',
-            location ? `${location.latitude}, ${location.longitude}` : 'Not Available',
             userAadhaar,
             formData.documentPhotoFront ? 'Yes' : 'No',
             formData.documentPhotoBack ? 'Yes' : 'No',
         ]];
 
-        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Location', 'Submitted By', 'Front Photo?', 'Back Photo?'];
+        const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By', 'Front Photo?', 'Back Photo?'];
 
         // Check if header exists
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'A1:K1',
+            range: 'A1:J1',
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
