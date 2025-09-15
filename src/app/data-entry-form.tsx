@@ -93,12 +93,13 @@ export default function DataEntryForm() {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    if(typeof navigator !== 'undefined') {
-      setIsOnline(navigator.onLine);
-    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -134,23 +135,18 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
-      const googleCreds = localStorage.getItem('googleApiCredentials');
-      const sheetId = localStorage.getItem('masterSheetId');
-
-      const result = await submitForm(data, loggedInUserAadhaar, location, googleCreds, sheetId); 
       
-      if (result.status === 'success') {
-        if (loggedInUserAadhaar) {
-          await updateUserSubmissions(loggedInUserAadhaar);
-        }
-        
+      const result = await submitForm(data, loggedInUserAadhaar, location); 
+      
+      if (result && result.status === 'success') {
         toast({ title: 'Success!', description: result.message });
         form.reset();
+        // Force a focus event to trigger header submission count update
+        window.dispatchEvent(new Event('focus'));
       } else {
-        toast({ title: 'Error', description: result.message, variant: 'destructive' });
+        toast({ title: 'Error', description: result?.message || 'An unknown error occurred.', variant: 'destructive' });
       }
     } catch (error: any) {
-        console.error("Form submission error:", error);
         toast({ title: 'Submission Error', description: error.message || "An unexpected error occurred.", variant: 'destructive' });
     } finally {
         setIsSubmitting(false);
