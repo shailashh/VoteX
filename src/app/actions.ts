@@ -162,7 +162,7 @@ export async function submitForm(
 
   } catch(e: any) {
       console.error("Error writing to google sheet: ", e);
-      if (e.message && (e.message.toLowerCase().includes('permission') || e.message.includes('401'))) {
+      if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
           return { message: `Failed to save to Google Sheet: Permission Denied. Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON). 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }
       return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
