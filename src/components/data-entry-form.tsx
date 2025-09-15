@@ -138,13 +138,13 @@ export default function DataEntryForm() {
       
       const result = await submitForm(data, loggedInUserAadhaar, location); 
       
-      if (result.status === 'success') {
+      if (result && result.status === 'success') {
         toast({ title: 'Success!', description: result.message });
         form.reset();
         // Force a focus event to trigger header submission count update
         window.dispatchEvent(new Event('focus'));
       } else {
-        toast({ title: 'Error', description: result.message, variant: 'destructive' });
+        toast({ title: 'Error', description: result?.message || 'An unknown error occurred.', variant: 'destructive' });
       }
     } catch (error: any) {
         console.error("Form submission error:", error);
