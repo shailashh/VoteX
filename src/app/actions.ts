@@ -26,7 +26,7 @@ const formSchema = z.discriminatedUnion('voterType', [
     rspNo: z.string().optional(), // Not present for this type
   }),
   baseSchema.extend({
-    voterType: z_literal('Voter Issue'),
+    voterType: z.literal('Voter Issue'),
     reason: z.string().min(5, 'Reason must be at least 5 characters.'),
     rspNo: z.string().optional(), // Not present for this type
   }),
