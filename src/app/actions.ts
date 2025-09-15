@@ -52,6 +52,18 @@ async function getGoogleSheetsClient(creds: string) {
     return google.sheets({ version: 'v4', auth });
 }
 
+function extractSheetIdFromUrl(url: string): string {
+    // Check if it's a full URL
+    if (url.includes('/spreadsheets/d/')) {
+        const parts = url.split('/d/');
+        if (parts.length > 1) {
+            return parts[1].split('/')[0];
+        }
+    }
+    // Assume it's already an ID if not a URL
+    return url;
+}
+
 
 export async function submitForm(
   data: any,
@@ -93,6 +105,8 @@ export async function submitForm(
     };
   }
   
+  const spreadsheetId = extractSheetIdFromUrl(masterSheetId);
+
   try {
       const sheets = await getGoogleSheetsClient(googleCreds);
       const range = 'Sheet1!A1';
@@ -115,13 +129,13 @@ export async function submitForm(
 
       // Check if header exists
       const headerResponse = await sheets.spreadsheets.values.get({
-          spreadsheetId: masterSheetId,
+          spreadsheetId,
           range: 'Sheet1!A1:K1',
       });
 
       if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
           await sheets.spreadsheets.values.update({
-              spreadsheetId: masterSheetId,
+              spreadsheetId,
               range: 'Sheet1!A1',
               valueInputOption: 'USER_ENTERED',
               requestBody: {
@@ -131,7 +145,7 @@ export async function submitForm(
       }
       
       await sheets.spreadsheets.values.append({
-          spreadsheetId: masterSheetId,
+          spreadsheetId,
           range,
           valueInputOption: 'USER_ENTERED',
           requestBody: {
@@ -148,6 +162,9 @@ export async function submitForm(
        if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
           return { message: `Failed to save to Google Sheet: Permission Denied (Code: ${e.code}). Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON) as 'Editor'. 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }
+       if (e.message && e.message.toLowerCase().includes('not found')) {
+            return { message: `Failed to save to Google Sheet: Requested entity was not found. Please double-check that the "Master Sheet ID" in your settings is correct and you have shared the sheet.`, status: 'error'};
+       }
       return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
   }
 
