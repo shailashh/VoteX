@@ -95,7 +95,7 @@ export async function submitForm(
   
   try {
       const sheets = await getGoogleSheetsClient(googleCreds);
-      const range = 'A1';
+      const range = 'Sheet1!A1';
       
       const values = [[
           new Date().toISOString(),
@@ -116,13 +116,13 @@ export async function submitForm(
       // Check if header exists
       const headerResponse = await sheets.spreadsheets.values.get({
           spreadsheetId: masterSheetId,
-          range: 'A1:K1',
+          range: 'Sheet1!A1:K1',
       });
 
       if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
           await sheets.spreadsheets.values.update({
               spreadsheetId: masterSheetId,
-              range: 'A1',
+              range: 'Sheet1!A1',
               valueInputOption: 'USER_ENTERED',
               requestBody: {
                   values: [headerRow],
