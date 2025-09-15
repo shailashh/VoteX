@@ -53,12 +53,27 @@ export default function ManageSheetsPage() {
             return;
         }
 
-        const trimmedCreds = googleCreds.trim();
+        let trimmedCreds = googleCreds.trim();
         if (!trimmedCreds) {
             setErrorMessage('Google API Credentials are required.');
             setSaveStatus('error');
             return;
         }
+        
+        // Handle cases where multiple JSON objects are pasted together
+        if (trimmedCreds.startsWith('{') && trimmedCreds.endsWith('}')) {
+             try {
+                // Attempt to fix JSON if multiple are concatenated
+                const fixedCreds = `[${trimmedCreds.replace(/}\s*{/g, '},{')}]`;
+                const parsed = JSON.parse(fixedCreds);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    trimmedCreds = JSON.stringify(parsed[0]);
+                }
+            } catch (e) {
+                // It's not a simple concatenation, proceed with original validation
+            }
+        }
+
 
         try {
             // Validate JSON format
