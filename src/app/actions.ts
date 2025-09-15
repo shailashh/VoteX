@@ -167,18 +167,3 @@ export async function submitForm(
     status: 'success',
   };
 }
-
-type SheetActionState = {
-    message: string;
-    status: 'success' | 'error';
-    sheetId?: string;
-};
-
-export async function createSheetForUser(userName: string, userEmail: string, masterSheetId: string, googleCreds: string): Promise<SheetActionState> {
-    // This function is no longer needed as we are using a single sheet.
-    // We can keep it here but it won't be called from the UI.
-    return {
-        status: 'success',
-        message: 'This feature is disabled.',
-    };
-}
