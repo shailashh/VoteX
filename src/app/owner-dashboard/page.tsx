@@ -385,7 +385,7 @@ export default function OwnerDashboard() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar>
-                                <AvatarFallback>{user.avatar || user.name?.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                                <AvatarFallback>{user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'U')}</AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="font-medium">{user.name}</div>
@@ -495,7 +495,7 @@ export default function OwnerDashboard() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarFallback>{user.avatar || user.name?.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                              <AvatarFallback>{user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'U')}</AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium">{user.name}</div>
