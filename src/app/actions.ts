@@ -2,7 +2,9 @@
 
 import { z } from 'zod';
 import { google } from 'googleapis';
-import { getUser } from './api/users/user-actions';
+import { getUser, updateUserSubmissions } from './api/users/user-actions';
+import { getSettings } from './owner-dashboard/manage-sheets/actions';
+
 
 const baseSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -55,8 +57,6 @@ export async function submitForm(
   data: any,
   userAadhaar: string | null,
   location: { latitude: number, longitude: number } | null,
-  googleCreds: string | null,
-  sheetId: string | null,
 ): Promise<FormState> {
   const validatedFields = formSchema.safeParse(data);
 
@@ -83,8 +83,10 @@ export async function submitForm(
     }
   }
 
-  if (!sheetId || !googleCreds) {
-     console.error('Sheet not configured. Sheet ID:', sheetId, 'Creds exist:', !!googleCreds);
+  const { masterSheetId, googleCreds } = await getSettings();
+
+  if (!masterSheetId || !googleCreds) {
+     console.error('Sheet not configured. Sheet ID:', masterSheetId, 'Creds exist:', !!googleCreds);
      return {
         message: 'Sheet is not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
@@ -130,13 +132,13 @@ export async function submitForm(
 
       // Check if header exists
       const headerResponse = await sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
+          spreadsheetId: masterSheetId,
           range: 'A1:K1',
       });
 
       if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
           await sheets.spreadsheets.values.update({
-              spreadsheetId: sheetId,
+              spreadsheetId: masterSheetId,
               range: 'A1',
               valueInputOption: 'USER_ENTERED',
               requestBody: {
@@ -146,16 +148,21 @@ export async function submitForm(
       }
       
       await sheets.spreadsheets.values.append({
-          spreadsheetId: sheetId,
+          spreadsheetId: masterSheetId,
           range,
           valueInputOption: 'USER_ENTERED',
           requestBody: {
               values,
           },
       });
+
+      if (userAadhaar) {
+        await updateUserSubmissions(userAadhaar);
+      }
+
   } catch(e: any) {
       console.error("Error writing to google sheet: ", e);
-      if (e.message && e.message.toLowerCase().includes('permission')) {
+      if (e.message && (e.message.toLowerCase().includes('permission') || e.message.includes('401'))) {
           return { message: `Failed to save to Google Sheet: Permission Denied. Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON). 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }
       return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };

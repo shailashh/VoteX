@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Loader2, Send, AlertTriangle, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
-import { updateUserStatus, updateUserSubmissions } from '@/app/api/users/user-actions';
+import { updateUserStatus } from '@/app/api/users/user-actions';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,18 +135,14 @@ export default function DataEntryForm() {
 
     try {
       const loggedInUserAadhaar = localStorage.getItem('loggedInUser');
-      const googleCreds = localStorage.getItem('googleApiCredentials');
-      const sheetId = localStorage.getItem('masterSheetId');
-
-      const result = await submitForm(data, loggedInUserAadhaar, location, googleCreds, sheetId); 
+      
+      const result = await submitForm(data, loggedInUserAadhaar, location); 
       
       if (result.status === 'success') {
-        if (loggedInUserAadhaar) {
-          await updateUserSubmissions(loggedInUserAadhaar);
-        }
-        
         toast({ title: 'Success!', description: result.message });
         form.reset();
+        // Force a focus event to trigger header submission count update
+        window.dispatchEvent(new Event('focus'));
       } else {
         toast({ title: 'Error', description: result.message, variant: 'destructive' });
       }

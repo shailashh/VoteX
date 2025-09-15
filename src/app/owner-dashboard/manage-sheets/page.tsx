@@ -11,26 +11,37 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getSettings, saveSettings } from './actions';
+import { FullPageLoader } from '@/components/ui/loading-spinner';
 
 export default function ManageSheetsPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [googleCreds, setGoogleCreds] = useState('');
     const [masterSheetId, setMasterSheetId] = useState('');
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    const loadSettings = useCallback(() => {
-        const savedCreds = localStorage.getItem('googleApiCredentials');
-        const savedSheetId = localStorage.getItem('masterSheetId');
-        if (savedCreds) {
-            setGoogleCreds(savedCreds);
+    const loadSettings = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const settings = await getSettings();
+            setGoogleCreds(settings.googleCreds || '');
+            setMasterSheetId(settings.masterSheetId || '');
+        } catch (error) {
+            console.error("Failed to load settings:", error);
+            toast({
+                title: "Error",
+                description: "Could not load saved settings.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
         }
-        if (savedSheetId) {
-            setMasterSheetId(savedSheetId);
-        }
-    }, []);
+    }, [toast]);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -42,7 +53,8 @@ export default function ManageSheetsPage() {
         }
     }, [router, loadSettings]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        setIsSaving(true);
         setSaveStatus('idle');
         setErrorMessage('');
         
@@ -50,6 +62,7 @@ export default function ManageSheetsPage() {
         if (!trimmedSheetId) {
             setErrorMessage('Master Sheet ID is required.');
             setSaveStatus('error');
+            setIsSaving(false);
             return;
         }
 
@@ -57,52 +70,41 @@ export default function ManageSheetsPage() {
         if (!trimmedCreds) {
             setErrorMessage('Google API Credentials are required.');
             setSaveStatus('error');
+            setIsSaving(false);
             return;
         }
-        
-        // Handle cases where multiple JSON objects are pasted together
-        if (trimmedCreds.startsWith('{') && trimmedCreds.endsWith('}')) {
-             try {
-                // Attempt to fix JSON if multiple are concatenated
-                const fixedCreds = `[${trimmedCreds.replace(/}\s*{/g, '},{')}]`;
-                const parsed = JSON.parse(fixedCreds);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    trimmedCreds = JSON.stringify(parsed[0]);
-                }
-            } catch (e) {
-                // It's not a simple concatenation, proceed with original validation
-            }
-        }
-
 
         try {
-            // Validate JSON format
             JSON.parse(trimmedCreds);
-            localStorage.setItem('googleApiCredentials', trimmedCreds);
-            localStorage.setItem('masterSheetId', trimmedSheetId);
-            
-            // Reload state from localstorage to ensure UI is in sync
-            loadSettings();
-
-            toast({
-                title: 'Settings Saved',
-                description: 'Google Sheets credentials and Master Sheet ID have been updated.',
-            });
-            setSaveStatus('success');
         } catch (error) {
             setErrorMessage('Invalid JSON format in Google API Credentials. Please paste the full, unmodified JSON content.');
             setSaveStatus('error');
-            console.error('Failed to parse and save Google credentials:', error);
-            toast({
-                title: 'Error Saving Settings',
-                description: 'The provided Google API Credentials are not valid JSON.',
-                variant: 'destructive',
-            });
+            setIsSaving(false);
+            return;
+        }
+
+        try {
+            const result = await saveSettings({ masterSheetId: trimmedSheetId, googleCreds: trimmedCreds });
+            if (result.success) {
+                toast({
+                    title: 'Settings Saved',
+                    description: 'Google Sheets settings have been permanently saved.',
+                });
+                setSaveStatus('success');
+            } else {
+                setErrorMessage(result.error || "An unknown error occurred.");
+                setSaveStatus('error');
+            }
+        } catch (error: any) {
+            setErrorMessage(error.message || 'An unexpected error occurred while saving.');
+            setSaveStatus('error');
+        } finally {
+            setIsSaving(false);
         }
     };
     
-    if (!isAuthorized) {
-        return null; // or a loading spinner
+    if (!isAuthorized || isLoading) {
+        return <FullPageLoader />;
     }
 
     return (
@@ -114,7 +116,7 @@ export default function ManageSheetsPage() {
                         <CardHeader>
                             <CardTitle>Manage Google Sheets</CardTitle>
                             <CardDescription>
-                                Securely store your Google API credentials and Master Sheet ID. This information is saved only in your browser's local storage.
+                                Securely store your Google API credentials and Master Sheet ID. This information will be saved permanently on the server.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -141,6 +143,7 @@ export default function ManageSheetsPage() {
                                     placeholder="Enter the ID of your main Google Sheet"
                                     value={masterSheetId}
                                     onChange={(e) => setMasterSheetId(e.target.value)}
+                                    disabled={isSaving}
                                 />
                                 <p className="text-sm text-muted-foreground">
                                     The ID is the long string in the sheet's URL: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
@@ -155,12 +158,15 @@ export default function ManageSheetsPage() {
                                     onChange={(e) => setGoogleCreds(e.target.value)}
                                     rows={10}
                                     className="font-mono text-xs"
+                                    disabled={isSaving}
                                 />
                                 <p className="text-sm text-muted-foreground">
                                     Ensure you have enabled the Google Sheets API and Google Drive API for your service account.
                                 </p>
                             </div>
-                            <Button onClick={handleSave}>Save Settings</Button>
+                            <Button onClick={handleSave} disabled={isSaving}>
+                                {isSaving ? 'Saving...' : 'Save Settings'}
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>
