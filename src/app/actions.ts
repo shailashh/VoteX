@@ -26,7 +26,7 @@ const formSchema = z.discriminatedUnion('voterType', [
     rspNo: z.string().optional(), // Not present for this type
   }),
   baseSchema.extend({
-    voterType: z.literal('Voter Issue'),
+    voterType: z_literal('Voter Issue'),
     reason: z.string().min(5, 'Reason must be at least 5 characters.'),
     rspNo: z.string().optional(), // Not present for this type
   }),
@@ -155,6 +155,9 @@ export async function submitForm(
       });
   } catch(e: any) {
       console.error("Error writing to google sheet: ", e);
+      if (e.message && e.message.toLowerCase().includes('permission')) {
+          return { message: `Failed to save to Google Sheet: Permission Denied. Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON). 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
+      }
       return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
   }
 
