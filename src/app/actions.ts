@@ -92,23 +92,6 @@ export async function submitForm(
         status: 'error',
     };
   }
-
-  console.log('--- New Form Submission ---');
-  console.log('Voter Type:', formData.voterType);
-  console.log('Full Name:', formData.fullName);
-  console.log('Mobile:', formData.mobile);
-  console.log('Address:', finalAddress);
-  if ('rspNo' in formData && formData.rspNo) {
-      console.log('RSP No:', formData.rspNo);
-  }
-  if ('reason' in formData && formData.reason) {
-      console.log('Reason:', formData.reason);
-  }
-  console.log('Front Photo captured:', !!formData.documentPhotoFront);
-  console.log('Back Photo captured:', !!formData.documentPhotoBack);
-  console.log('Submitted by Aadhaar:', userAadhaar);
-  console.log('Submitted by Name:', submitterName);
-  console.log('---------------------------');
   
   try {
       const sheets = await getGoogleSheetsClient(googleCreds);
@@ -162,8 +145,8 @@ export async function submitForm(
 
   } catch(e: any) {
       console.error("Error writing to google sheet: ", e);
-      if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
-          return { message: `Failed to save to Google Sheet: Permission Denied. Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON). 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
+       if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
+          return { message: `Failed to save to Google Sheet: Permission Denied (Code: ${e.code}). Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON) as 'Editor'. 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }
       return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
   }
