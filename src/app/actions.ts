@@ -6,6 +6,7 @@ import { getUser, updateUserSubmissions } from './api/users/user-actions';
 import { getSettings } from './owner-dashboard/manage-sheets/actions';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { Readable } from 'stream';
 
 
 const baseSchema = z.object({
@@ -42,17 +43,76 @@ type FormState = {
   status: 'success' | 'error';
 };
 
-async function getGoogleSheetsClient(creds: string) {
+async function getGoogleAuth(creds: string) {
     const credentials = JSON.parse(creds);
-    const auth = new google.auth.GoogleAuth({
+    return new google.auth.GoogleAuth({
         credentials,
         scopes: [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive.file'
         ],
     });
-    return google.sheets({ version: 'v4', auth });
 }
+
+
+async function getDriveFolderId(drive: any, folderName: string): Promise<string> {
+    const res = await drive.files.list({
+        q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
+        fields: 'files(id, name)',
+    });
+
+    if (res.data.files.length > 0) {
+        return res.data.files[0].id;
+    } else {
+        const fileMetadata = {
+            name: folderName,
+            mimeType: 'application/vnd.google-apps.folder',
+        };
+        const folder = await drive.files.create({
+            resource: fileMetadata,
+            fields: 'id',
+        });
+        return folder.data.id;
+    }
+}
+
+
+async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: string): Promise<string> {
+    const folderName = "VoteX Document Photos";
+    const folderId = await getDriveFolderId(drive, folderName);
+
+    const mimeType = photoDataUrl.substring(photoDataUrl.indexOf(':') + 1, photoDataUrl.indexOf(';'));
+    const base64Data = photoDataUrl.substring(photoDataUrl.indexOf(',') + 1);
+    const photoBuffer = Buffer.from(base64Data, 'base64');
+    const photoStream = Readable.from(photoBuffer);
+
+    const fileMetadata = {
+        name: fileName,
+        parents: [folderId],
+    };
+    const media = {
+        mimeType: mimeType,
+        body: photoStream,
+    };
+
+    const file = await drive.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id, webViewLink',
+    });
+    
+    // Make the file publicly readable
+    await drive.permissions.create({
+        fileId: file.data.id,
+        requestBody: {
+            role: 'reader',
+            type: 'anyone',
+        },
+    });
+
+    return file.data.webViewLink;
+}
+
 
 function extractSheetIdFromUrl(url: string): string {
     // Check if it's a full URL
@@ -108,14 +168,25 @@ export async function submitForm(
   const spreadsheetId = extractSheetIdFromUrl(masterSheetId);
 
   try {
-      const sheets = await getGoogleSheetsClient(googleCreds);
-      const range = 'Sheet1!A1';
+      const auth = await getGoogleAuth(googleCreds);
+      const sheets = google.sheets({ version: 'v4', auth });
+      const drive = google.drive({ version: 'v3', auth });
 
       const now = new Date();
       const timeZone = 'Asia/Kolkata';
       const zonedDate = toZonedTime(now, timeZone);
       const formattedTimestamp = format(zonedDate, 'dd/MM/yyyy HH:mm:ss');
+      const fileTimestamp = format(zonedDate, 'yyyyMMdd_HHmmss');
       
+      const frontPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_front.jpg`;
+      const backPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_back.jpg`;
+
+      const [frontPhotoLink, backPhotoLink] = await Promise.all([
+          uploadPhotoToDrive(drive, formData.documentPhotoFront, frontPhotoFileName),
+          uploadPhotoToDrive(drive, formData.documentPhotoBack, backPhotoFileName)
+      ]);
+
+
       const values = [[
           formattedTimestamp,
           formData.voterType,
@@ -126,11 +197,11 @@ export async function submitForm(
           'reason' in formData ? formData.reason || '' : '',
           userAadhaar || '',
           submitterName || '',
-          formData.documentPhotoFront ? 'Yes' : 'No',
-          formData.documentPhotoBack ? 'Yes' : 'No',
+          frontPhotoLink,
+          backPhotoLink,
       ]];
 
-      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo?', 'Back Photo?'];
+      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo Link', 'Back Photo Link'];
 
       // Check if header exists
       const headerResponse = await sheets.spreadsheets.values.get({
@@ -151,7 +222,7 @@ export async function submitForm(
       
       await sheets.spreadsheets.values.append({
           spreadsheetId,
-          range,
+          range: 'Sheet1!A1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
               values,
@@ -164,12 +235,12 @@ export async function submitForm(
 
   } catch(e: any) {
        if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
-          return { message: `Failed to save to Google Sheet: Permission Denied (Code: ${e.code}). Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON) as 'Editor'. 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
+          return { message: `Failed to save to Google Sheet/Drive: Permission Denied (Code: ${e.code}). Please ensure: 1. The Google Sheet & a Drive folder are shared with the service account email (client_email in your JSON) as 'Editor'. 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }
        if (e.message && e.message.toLowerCase().includes('not found')) {
-            return { message: `Failed to save to Google Sheet: Requested entity was not found. Please double-check that the "Master Sheet ID" in your settings is correct and you have shared the sheet.`, status: 'error'};
+            return { message: `Failed to save to Google Sheet/Drive: Requested entity was not found. Please double-check that the "Master Sheet ID" in your settings is correct and you have shared the sheet.`, status: 'error'};
        }
-      return { message: `Failed to save to Google Sheet: ${e.message}`, status: 'error' };
+      return { message: `Failed to save to Google Sheet/Drive: ${e.message}`, status: 'error' };
   }
 
 
