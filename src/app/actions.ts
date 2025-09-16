@@ -49,7 +49,7 @@ async function getGoogleAuth(creds: string) {
         credentials,
         scopes: [
             'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive.file'
+            'https://www.googleapis.com/auth/drive'
         ],
     });
 }
@@ -72,14 +72,14 @@ async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: st
     const file = await drive.files.create({
         resource: fileMetadata,
         media: media,
-        fields: 'id, webViewLink',
+        fields: 'id',
     });
     
-    if (!file.data.webViewLink) {
-        throw new Error("File uploaded to Drive, but could not get a shareable link. Please ensure the parent folder is shared correctly ('Anyone with the link').");
+    if (!file.data.id) {
+        throw new Error("File uploaded to Drive, but could not get back a File ID.");
     }
     
-    return file.data.webViewLink;
+    return file.data.id;
 }
 
 
@@ -139,8 +139,8 @@ export async function submitForm(
       const auth = await getGoogleAuth(googleCreds);
       const drive = google.drive({ version: 'v3', auth });
       
-      let frontPhotoLink = '';
-      let backPhotoLink = '';
+      let frontPhotoId = '';
+      let backPhotoId = '';
       
       try {
         const now = new Date();
@@ -151,7 +151,7 @@ export async function submitForm(
         const frontPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_front.jpg`;
         const backPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_back.jpg`;
 
-        [frontPhotoLink, backPhotoLink] = await Promise.all([
+        [frontPhotoId, backPhotoId] = await Promise.all([
             uploadPhotoToDrive(drive, formData.documentPhotoFront, frontPhotoFileName, driveFolderId),
             uploadPhotoToDrive(drive, formData.documentPhotoBack, backPhotoFileName, driveFolderId)
         ]);
@@ -182,11 +182,11 @@ export async function submitForm(
           'reason' in formData ? formData.reason || '' : '',
           userAadhaar || '',
           submitterName || '',
-          frontPhotoLink,
-          backPhotoLink,
+          frontPhotoId,
+          backPhotoId,
       ]];
 
-      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo Link', 'Back Photo Link'];
+      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo ID', 'Back Photo ID'];
       const sheetName = 'Sheet1';
       try {
         const headerResponse = await sheets.spreadsheets.values.get({
