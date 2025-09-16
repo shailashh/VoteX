@@ -147,7 +147,6 @@ export default function DataEntryForm() {
         toast({ title: 'Error', description: result?.message || 'An unknown error occurred.', variant: 'destructive' });
       }
     } catch (error: any) {
-        console.error("Form submission error:", error);
         toast({ title: 'Submission Error', description: error.message || "An unexpected error occurred.", variant: 'destructive' });
     } finally {
         setIsSubmitting(false);

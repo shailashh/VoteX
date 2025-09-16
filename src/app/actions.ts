@@ -73,7 +73,6 @@ export async function submitForm(
   const validatedFields = formSchema.safeParse(data);
 
   if (!validatedFields.success) {
-    console.error('Validation failed:', validatedFields.error.flatten().fieldErrors);
     return {
       message: 'Invalid data provided. Please check all fields.',
       status: 'error',
@@ -98,7 +97,6 @@ export async function submitForm(
   const { masterSheetId, googleCreds } = await getSettings();
 
   if (!masterSheetId || !googleCreds) {
-     console.error('Sheet not configured. Sheet ID:', masterSheetId, 'Creds exist:', !!googleCreds);
      return {
         message: 'Sheet is not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
@@ -158,7 +156,6 @@ export async function submitForm(
       }
 
   } catch(e: any) {
-      console.error("Error writing to google sheet: ", e);
        if (e.message && (e.message.toLowerCase().includes('permission') || e.code === 401 || e.code === 403)) {
           return { message: `Failed to save to Google Sheet: Permission Denied (Code: ${e.code}). Please ensure: 1. The Google Sheet is shared with the service account email (client_email in your JSON) as 'Editor'. 2. The Google Sheets & Drive APIs are enabled in your Cloud project.`, status: 'error' };
       }

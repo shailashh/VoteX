@@ -41,6 +41,7 @@ import {
   Shield,
   Phone,
   RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Dialog,
@@ -71,6 +72,8 @@ import {
     updateUser,
     deleteUser,
 } from '../api/users/user-actions';
+import { getSettings } from '../owner-dashboard/manage-sheets/actions';
+import Link from 'next/link';
 
 
 export default function OwnerDashboard() {
@@ -88,12 +91,15 @@ export default function OwnerDashboard() {
   const [newUserPhone, setNewUserPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [masterSheetId, setMasterSheetId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const allUsers = await getUsers();
       setUsers(allUsers);
+      const settings = await getSettings();
+      setMasterSheetId(settings.masterSheetId);
     } catch (error) {
       console.error("Data fetching error:", error);
       toast({ title: "Data fetching error", description: "Could not load user data. Please try again.", variant: "destructive" });
@@ -243,7 +249,7 @@ export default function OwnerDashboard() {
       <Header />
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
              <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -275,6 +281,26 @@ export default function OwnerDashboard() {
                 <div className="text-2xl font-bold">{totalSubmissions}</div>
               </CardContent>
             </Card>
+            {masterSheetId && (
+              <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium">
+                          Master Sheet Link
+                      </CardTitle>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-xs text-muted-foreground truncate mb-2">
+                          ID: {masterSheetId}
+                      </p>
+                      <Button asChild size="sm">
+                          <Link href={`https://docs.google.com/spreadsheets/d/${masterSheetId}`} target="_blank">
+                              Open Google Sheet
+                          </Link>
+                      </Button>
+                  </CardContent>
+              </Card>
+            )}
           </div>
 
           <Card className="mb-8">

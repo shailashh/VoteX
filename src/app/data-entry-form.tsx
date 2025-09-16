@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Loader2, Send, AlertTriangle, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitForm } from '@/app/actions';
-import { updateUserStatus, updateUserSubmissions } from '@/app/api/users/user-actions';
+import { updateUserStatus } from '@/app/api/users/user-actions';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

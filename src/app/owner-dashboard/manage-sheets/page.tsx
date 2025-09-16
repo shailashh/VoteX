@@ -140,13 +140,13 @@ export default function ManageSheetsPage() {
                                 <Label htmlFor="master-sheet-id">Master Sheet ID</Label>
                                 <Input
                                     id="master-sheet-id"
-                                    placeholder="Enter the ID of your main Google Sheet"
+                                    placeholder="Enter the ID or full URL of your main Google Sheet"
                                     value={masterSheetId}
                                     onChange={(e) => setMasterSheetId(e.target.value)}
                                     disabled={isSaving}
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    The ID is the long string in the sheet's URL: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
+                                    You can paste the full URL or just the ID: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
                                 </p>
                             </div>
                              <div className="space-y-2">
