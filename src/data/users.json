@@ -9,7 +9,7 @@
     "avatar": "s",
     "sheet": null,
     "status": "Active",
-    "submissions": 5
+    "submissions": 10
   },
   {
     "id": 3,
@@ -19,6 +19,18 @@
     "phone": "7823810829",
     "password": "7bjw8dok",
     "avatar": "Ng",
+    "sheet": null,
+    "status": "Inactive",
+    "submissions": 0
+  },
+  {
+    "id": 4,
+    "name": "Deepak mishra ",
+    "email": "user3@example.com",
+    "aadhaar": "808080808080",
+    "phone": "8484546464",
+    "password": "r9e7uab9",
+    "avatar": "Dm",
     "sheet": null,
     "status": "Inactive",
     "submissions": 0

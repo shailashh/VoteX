@@ -6,6 +6,7 @@ import { getUser, updateUserSubmissions } from './api/users/user-actions';
 import { getSettings } from './owner-dashboard/manage-sheets/actions';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { Readable } from 'stream';
 
 const baseSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -47,6 +48,7 @@ async function getGoogleAuth(creds: string) {
         credentials,
         scopes: [
             'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive.file'
         ],
     });
 }
@@ -62,6 +64,46 @@ function extractSheetIdFromUrl(url: string | undefined | null): string {
     return url; // Assume it's an ID if no match
 }
 
+function extractDriveFolderIdFromUrl(url: string | undefined | null): string {
+    if (!url) {
+        return '';
+    }
+    const match = url.match(/folders\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return url;
+}
+
+async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: string, folderId: string): Promise<string> {
+    const mimeType = photoDataUrl.split(';')[0].split(':')[1];
+    const base64Data = photoDataUrl.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+    const stream = new Readable();
+    stream.push(buffer);
+    stream.push(null);
+
+    const fileMetadata = {
+        name: fileName,
+        parents: [folderId],
+    };
+    const media = {
+        mimeType: mimeType,
+        body: stream,
+    };
+    
+    const file = await drive.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id, webViewLink',
+    });
+
+    if (!file.data.webViewLink) {
+        throw new Error('Could not get a shareable link for the uploaded file. Please check folder sharing settings.');
+    }
+    
+    return file.data.webViewLink;
+}
 
 export async function submitForm(
   data: any,
@@ -92,24 +134,43 @@ export async function submitForm(
     }
   }
 
-  const { masterSheetId, googleCreds } = await getSettings();
+  const { masterSheetId, googleCreds, driveFolderId } = await getSettings();
 
-  if (!masterSheetId || !googleCreds) {
+  if (!masterSheetId || !googleCreds || !driveFolderId) {
      return {
-        message: 'Master Sheet ID or Credentials are not configured. Please check your settings on the Manage Sheets page.',
+        message: 'Master Sheet ID, Google Credentials, or Drive Folder ID are not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
     };
   }
   
   const spreadsheetId = extractSheetIdFromUrl(masterSheetId);
+  const finalDriveFolderId = extractDriveFolderIdFromUrl(driveFolderId);
+
+  let frontPhotoLink = '';
+  let backPhotoLink = '';
 
   try {
       const auth = await getGoogleAuth(googleCreds);
-      
-      const sheets = google.sheets({ version: 'v4', auth });
+      const drive = google.drive({ version: 'v3', auth });
       const now = new Date();
       const timeZone = 'Asia/Kolkata';
       const zonedDate = toZonedTime(now, timeZone);
+      const fileTimestamp = format(zonedDate, 'yyyy-MM-dd_HH-mm-ss');
+
+      try {
+          frontPhotoLink = await uploadPhotoToDrive(drive, formData.documentPhotoFront, `${formData.fullName.replace(/\s+/g, '_')}_front_${fileTimestamp}.jpg`, finalDriveFolderId);
+          backPhotoLink = await uploadPhotoToDrive(drive, formData.documentPhotoBack, `${formData.fullName.replace(/\s+/g, '_')}_back_${fileTimestamp}.jpg`, finalDriveFolderId);
+      } catch (driveError: any) {
+           if (driveError.code === 403) {
+              return { message: `Google Drive Error: Permission Denied (Code: 403). Please ensure: 1. The Google Drive folder is shared with the service account email as 'Editor'. 2. The folder's general access is 'Anyone with the link'. 3. The Google Drive API is enabled in your Cloud project.`, status: 'error' };
+          }
+          if (driveError.code === 404) {
+              return { message: `Google Drive Error: Folder Not Found (Code: 404). The 'Google Drive Folder ID' in your settings is incorrect. Please verify it.`, status: 'error' };
+          }
+          return { message: `Failed to upload photos to Google Drive: ${driveError.message}`, status: 'error' };
+      }
+      
+      const sheets = google.sheets({ version: 'v4', auth });
       const formattedTimestamp = format(zonedDate, 'dd/MM/yyyy HH:mm:ss');
       
       const values = [[
@@ -122,16 +183,16 @@ export async function submitForm(
           'reason' in formData ? formData.reason || '' : '',
           userAadhaar || '',
           submitterName || '',
-          formData.documentPhotoFront, // Save Base64 directly
-          formData.documentPhotoBack,  // Save Base64 directly
+          frontPhotoLink,
+          backPhotoLink,
       ]];
 
-      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo', 'Back Photo'];
+      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo Link', 'Back Photo Link'];
       const sheetName = 'Sheet1';
       try {
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${sheetName}!A1:K1`,
+            range: `${sheetName}!A1:L1`,
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
