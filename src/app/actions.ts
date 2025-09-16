@@ -62,21 +62,14 @@ async function getDriveFolderId(drive: any, folderName: string): Promise<string>
     });
 
     if (res.data.files && res.data.files.length > 0) {
-        return res.data.files[0].id;
-    } else {
-        const fileMetadata = {
-            name: folderName,
-            mimeType: 'application/vnd.google-apps.folder',
-        };
-        const folder = await drive.files.create({
-            resource: fileMetadata,
-            fields: 'id',
-        });
-        if (!folder.data.id) {
-            throw new Error("Could not create Google Drive folder. Please ensure the service account has 'Editor' permissions on your Google Drive's root or relevant parent folder.");
+        if(res.data.files[0].id) {
+            return res.data.files[0].id;
         }
-        return folder.data.id;
     }
+    
+    // If we are here, the folder was not found. We will not attempt to create it.
+    // Instead we will throw a specific error telling the user what to do.
+    throw new Error(`Google Drive folder named '${folderName}' not found. Please create this folder in your Google Drive and share it with your service account email as 'Editor'.`);
 }
 
 
@@ -104,11 +97,8 @@ async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: st
         fields: 'id, webViewLink',
     });
     
-    // The permission to make files public is often restricted.
-    // It's better to share the parent folder "VoteX Document Photos" once.
-    // The link in webViewLink will work if the folder is shared with "Anyone with the link".
     if (!file.data.webViewLink) {
-        throw new Error("File uploaded to Drive, but could not get a webViewLink.");
+        throw new Error("File uploaded to Drive, but could not get a shareable link. Please ensure the parent folder 'VoteX Document Photos' is shared with 'Anyone with the link'.");
     }
     
     return file.data.webViewLink;
