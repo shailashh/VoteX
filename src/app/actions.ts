@@ -114,7 +114,10 @@ async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: st
 }
 
 
-function extractSheetIdFromUrl(url: string): string {
+function extractSheetIdFromUrl(url: string | undefined | null): string {
+    if (!url) {
+        return '';
+    }
     // Check if it's a full URL
     if (url.includes('/spreadsheets/d/')) {
         const parts = url.split('/d/');
