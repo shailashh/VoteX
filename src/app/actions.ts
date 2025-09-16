@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { google } from 'googleapis';
 import { getUser, updateUserSubmissions } from './api/users/user-actions';
 import { getSettings } from './owner-dashboard/manage-sheets/actions';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 
 const baseSchema = z.object({
@@ -108,9 +110,14 @@ export async function submitForm(
   try {
       const sheets = await getGoogleSheetsClient(googleCreds);
       const range = 'Sheet1!A1';
+
+      const now = new Date();
+      const timeZone = 'Asia/Kolkata';
+      const zonedDate = toZonedTime(now, timeZone);
+      const formattedTimestamp = format(zonedDate, 'dd/MM/yyyy HH:mm:ss');
       
       const values = [[
-          new Date().toISOString(),
+          formattedTimestamp,
           formData.voterType,
           formData.fullName,
           formData.mobile,
