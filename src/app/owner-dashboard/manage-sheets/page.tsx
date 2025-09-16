@@ -22,6 +22,7 @@ export default function ManageSheetsPage() {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [googleCreds, setGoogleCreds] = useState('');
     const [masterSheetId, setMasterSheetId] = useState('');
+    const [driveFolderId, setDriveFolderId] = useState('');
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +33,7 @@ export default function ManageSheetsPage() {
             const settings = await getSettings();
             setGoogleCreds(settings.googleCreds || '');
             setMasterSheetId(settings.masterSheetId || '');
+            setDriveFolderId(settings.driveFolderId || '');
         } catch (error) {
             console.error("Failed to load settings:", error);
             toast({
@@ -88,7 +90,7 @@ export default function ManageSheetsPage() {
             const result = await saveSettings({ 
                 masterSheetId: trimmedSheetId, 
                 googleCreds: trimmedCreds,
-                driveFolderId: null // No longer used
+                driveFolderId: driveFolderId.trim()
             });
             if (result.success) {
                 toast({

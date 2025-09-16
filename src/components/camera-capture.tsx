@@ -71,7 +71,8 @@ export function CameraCapture({ onCapture, photo, title }: CameraCaptureProps) {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const targetWidth = 1024; // A reasonable width for quality
+      // Reduce canvas size for smaller image data
+      const targetWidth = 800; 
       const scale = targetWidth / video.videoWidth;
       canvas.width = targetWidth;
       canvas.height = video.videoHeight * scale;
@@ -79,8 +80,8 @@ export function CameraCapture({ onCapture, photo, title }: CameraCaptureProps) {
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // Use quality 1.0 for maximum quality
-        const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
+        // Use lower quality jpeg for smaller file size
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
         onCapture(dataUrl);
       }
     }
