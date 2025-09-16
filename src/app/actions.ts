@@ -6,8 +6,6 @@ import { getUser, updateUserSubmissions } from './api/users/user-actions';
 import { getSettings } from './owner-dashboard/manage-sheets/actions';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Readable } from 'stream';
-
 
 const baseSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -49,39 +47,9 @@ async function getGoogleAuth(creds: string) {
         credentials,
         scopes: [
             'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive'
         ],
     });
 }
-
-async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: string, folderId: string): Promise<string> {
-    const mimeType = photoDataUrl.substring(photoDataUrl.indexOf(':') + 1, photoDataUrl.indexOf(';'));
-    const base64Data = photoDataUrl.substring(photoDataUrl.indexOf(',') + 1);
-    const photoBuffer = Buffer.from(base64Data, 'base64');
-    const photoStream = Readable.from(photoBuffer);
-
-    const fileMetadata = {
-        name: fileName,
-        parents: [folderId],
-    };
-    const media = {
-        mimeType: mimeType,
-        body: photoStream,
-    };
-
-    const file = await drive.files.create({
-        resource: fileMetadata,
-        media: media,
-        fields: 'id',
-    });
-    
-    if (!file.data.id) {
-        throw new Error("File uploaded to Drive, but could not get back a File ID.");
-    }
-    
-    return file.data.id;
-}
-
 
 function extractSheetIdFromUrl(url: string | undefined | null): string {
     if (!url) {
@@ -124,11 +92,11 @@ export async function submitForm(
     }
   }
 
-  const { masterSheetId, googleCreds, driveFolderId } = await getSettings();
+  const { masterSheetId, googleCreds } = await getSettings();
 
-  if (!masterSheetId || !googleCreds || !driveFolderId) {
+  if (!masterSheetId || !googleCreds) {
      return {
-        message: 'Master Sheet ID, Google Drive Folder ID, or Credentials are not configured. Please check your settings on the Manage Sheets page.',
+        message: 'Master Sheet ID or Credentials are not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
     };
   }
@@ -137,35 +105,7 @@ export async function submitForm(
 
   try {
       const auth = await getGoogleAuth(googleCreds);
-      const drive = google.drive({ version: 'v3', auth });
       
-      let frontPhotoId = '';
-      let backPhotoId = '';
-      
-      try {
-        const now = new Date();
-        const timeZone = 'Asia/Kolkata';
-        const zonedDate = toZonedTime(now, timeZone);
-        const fileTimestamp = format(zonedDate, 'yyyyMMdd_HHmmss');
-        
-        const frontPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_front.jpg`;
-        const backPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_back.jpg`;
-
-        [frontPhotoId, backPhotoId] = await Promise.all([
-            uploadPhotoToDrive(drive, formData.documentPhotoFront, frontPhotoFileName, driveFolderId),
-            uploadPhotoToDrive(drive, formData.documentPhotoBack, backPhotoFileName, driveFolderId)
-        ]);
-      } catch(driveError: any) {
-          if (driveError.code === 403) {
-            return { message: `Google Drive Error: Permission Denied (Code: 403). Please ensure: 1. The Google Drive folder specified in settings is shared with your service account email as 'Editor'. 2. The Google Drive API is enabled in your Cloud project.`, status: 'error' };
-          }
-          if (driveError.code === 404) {
-             return { message: `Google Drive Error: Folder Not Found (Code: 404). The folder ID specified in your settings is incorrect or has been deleted. Please verify the ID.`, status: 'error' };
-          }
-          return { message: `Failed to upload photo to Google Drive: ${driveError.message}`, status: 'error'};
-      }
-
-
       const sheets = google.sheets({ version: 'v4', auth });
       const now = new Date();
       const timeZone = 'Asia/Kolkata';
@@ -182,11 +122,11 @@ export async function submitForm(
           'reason' in formData ? formData.reason || '' : '',
           userAadhaar || '',
           submitterName || '',
-          frontPhotoId,
-          backPhotoId,
+          formData.documentPhotoFront, // Save Base64 directly
+          formData.documentPhotoBack,  // Save Base64 directly
       ]];
 
-      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo ID', 'Back Photo ID'];
+      const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo', 'Back Photo'];
       const sheetName = 'Sheet1';
       try {
         const headerResponse = await sheets.spreadsheets.values.get({
@@ -223,7 +163,6 @@ export async function submitForm(
           return { message: `Failed to save to Google Sheet: ${sheetError.message}`, status: 'error' };
       }
 
-
       if (userAadhaar) {
         await updateUserSubmissions(userAadhaar);
       }
@@ -231,7 +170,6 @@ export async function submitForm(
   } catch(e: any) {
        return { message: `An unexpected error occurred: ${e.message}`, status: 'error' };
   }
-
 
   return {
     message: `Data for ${formData.fullName} submitted successfully!`,

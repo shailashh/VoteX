@@ -71,12 +71,16 @@ export function CameraCapture({ onCapture, photo, title }: CameraCaptureProps) {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const targetWidth = 800; // Resize to a smaller width
+      const scale = targetWidth / video.videoWidth;
+      canvas.width = targetWidth;
+      canvas.height = video.videoHeight * scale;
+      
       const context = canvas.getContext('2d');
       if (context) {
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Compress image by setting JPEG quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
         onCapture(dataUrl);
       }
     }
