@@ -7,16 +7,23 @@ const dataFilePath = path.join(process.cwd(), 'src', 'data', 'settings.json');
 type Settings = {
   masterSheetId: string | null;
   googleCreds: string | null;
+  driveFolderId: string | null;
 };
 
 async function readSettings(): Promise<Settings> {
   try {
     const data = await fs.readFile(dataFilePath, 'utf-8');
-    return JSON.parse(data);
+    const parsedData = JSON.parse(data);
+    // Ensure all keys exist to prevent undefined errors
+    return {
+      masterSheetId: parsedData.masterSheetId || null,
+      googleCreds: parsedData.googleCreds || null,
+      driveFolderId: parsedData.driveFolderId || null
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       await ensureDataDirectory();
-      const defaultSettings = { masterSheetId: null, googleCreds: null };
+      const defaultSettings = { masterSheetId: null, googleCreds: null, driveFolderId: null };
       await writeSettings(defaultSettings);
       return defaultSettings;
     }

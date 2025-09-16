@@ -14,6 +14,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getSettings, saveSettings } from './actions';
 import { FullPageLoader } from '@/components/ui/loading-spinner';
 
+function extractFolderIdFromUrl(url: string | undefined | null): string {
+    if (!url) {
+        return '';
+    }
+    const match = url.match(/folders\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return url; // Assume it's an ID if no match
+}
+
 export default function ManageSheetsPage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -21,6 +32,7 @@ export default function ManageSheetsPage() {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [googleCreds, setGoogleCreds] = useState('');
     const [masterSheetId, setMasterSheetId] = useState('');
+    const [driveFolderId, setDriveFolderId] = useState('');
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -31,6 +43,7 @@ export default function ManageSheetsPage() {
             const settings = await getSettings();
             setGoogleCreds(settings.googleCreds || '');
             setMasterSheetId(settings.masterSheetId || '');
+            setDriveFolderId(settings.driveFolderId || '');
         } catch (error) {
             console.error("Failed to load settings:", error);
             toast({
@@ -66,6 +79,14 @@ export default function ManageSheetsPage() {
             return;
         }
 
+        const trimmedFolderId = extractFolderIdFromUrl(driveFolderId.trim());
+        if (!trimmedFolderId) {
+            setErrorMessage('Google Drive Folder ID is required.');
+            setSaveStatus('error');
+            setIsSaving(false);
+            return;
+        }
+
         let trimmedCreds = googleCreds.trim();
         if (!trimmedCreds) {
             setErrorMessage('Google API Credentials are required.');
@@ -84,13 +105,18 @@ export default function ManageSheetsPage() {
         }
 
         try {
-            const result = await saveSettings({ masterSheetId: trimmedSheetId, googleCreds: trimmedCreds });
+            const result = await saveSettings({ 
+                masterSheetId: trimmedSheetId, 
+                googleCreds: trimmedCreds,
+                driveFolderId: trimmedFolderId
+            });
             if (result.success) {
                 toast({
                     title: 'Settings Saved',
-                    description: 'Google Sheets settings have been permanently saved.',
+                    description: 'Your configuration has been permanently saved.',
                 });
                 setSaveStatus('success');
+                setDriveFolderId(trimmedFolderId); // Show the extracted ID in the input
             } else {
                 setErrorMessage(result.error || "An unknown error occurred.");
                 setSaveStatus('error');
@@ -114,9 +140,9 @@ export default function ManageSheetsPage() {
                 <div className="w-full max-w-3xl mx-auto">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Manage Google Sheets</CardTitle>
+                            <CardTitle>Manage Google Integration</CardTitle>
                             <CardDescription>
-                                Securely store your Google API credentials and Master Sheet ID. This information will be saved permanently on the server.
+                                Securely store your Google API credentials, Sheet ID, and Drive Folder ID.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -125,7 +151,7 @@ export default function ManageSheetsPage() {
                                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                                     <AlertTitle className="text-green-800">Settings Saved Successfully!</AlertTitle>
                                     <AlertDescription className="text-green-700">
-                                        Your Google Sheets configuration has been updated.
+                                        Your configuration has been updated.
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -146,7 +172,20 @@ export default function ManageSheetsPage() {
                                     disabled={isSaving}
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    You can paste the full URL or just the ID: `.../spreadsheets/d/`**`SHEET_ID`**`/edit`
+                                    You can paste the full URL or just the ID.
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="drive-folder-id">Google Drive Folder ID</Label>
+                                <Input
+                                    id="drive-folder-id"
+                                    placeholder="Enter the ID or full URL of your Google Drive folder"
+                                    value={driveFolderId}
+                                    onChange={(e) => setDriveFolderId(e.target.value)}
+                                    disabled={isSaving}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    You can paste the full URL or just the folder's ID from the URL.
                                 </p>
                             </div>
                              <div className="space-y-2">
@@ -161,7 +200,7 @@ export default function ManageSheetsPage() {
                                     disabled={isSaving}
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    Ensure you have enabled the Google Sheets API and Google Drive API for your service account.
+                                    Ensure the Google Sheets & Drive APIs are enabled and the folder/sheet is shared with the service account email as 'Editor'.
                                 </p>
                             </div>
                             <Button onClick={handleSave} disabled={isSaving}>

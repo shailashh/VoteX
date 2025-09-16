@@ -54,29 +54,7 @@ async function getGoogleAuth(creds: string) {
     });
 }
 
-
-async function getDriveFolderId(drive: any, folderName: string): Promise<string> {
-    const res = await drive.files.list({
-        q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
-        fields: 'files(id, name)',
-    });
-
-    if (res.data.files && res.data.files.length > 0) {
-        if(res.data.files[0].id) {
-            return res.data.files[0].id;
-        }
-    }
-    
-    // If we are here, the folder was not found. We will not attempt to create it.
-    // Instead we will throw a specific error telling the user what to do.
-    throw new Error(`Google Drive folder named '${folderName}' not found. Please create this folder in your Google Drive and share it with your service account email as 'Editor'.`);
-}
-
-
-async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: string): Promise<string> {
-    const folderName = "VoteX Document Photos";
-    const folderId = await getDriveFolderId(drive, folderName);
-
+async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: string, folderId: string): Promise<string> {
     const mimeType = photoDataUrl.substring(photoDataUrl.indexOf(':') + 1, photoDataUrl.indexOf(';'));
     const base64Data = photoDataUrl.substring(photoDataUrl.indexOf(',') + 1);
     const photoBuffer = Buffer.from(base64Data, 'base64');
@@ -98,7 +76,7 @@ async function uploadPhotoToDrive(drive: any, photoDataUrl: string, fileName: st
     });
     
     if (!file.data.webViewLink) {
-        throw new Error("File uploaded to Drive, but could not get a shareable link. Please ensure the parent folder 'VoteX Document Photos' is shared with 'Anyone with the link'.");
+        throw new Error("File uploaded to Drive, but could not get a shareable link. Please ensure the parent folder is shared correctly ('Anyone with the link').");
     }
     
     return file.data.webViewLink;
@@ -109,13 +87,11 @@ function extractSheetIdFromUrl(url: string | undefined | null): string {
     if (!url) {
         return '';
     }
-    if (url.includes('/spreadsheets/d/')) {
-        const parts = url.split('/d/');
-        if (parts.length > 1) {
-            return parts[1].split('/')[0];
-        }
+    const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+        return match[1];
     }
-    return url;
+    return url; // Assume it's an ID if no match
 }
 
 
@@ -148,11 +124,11 @@ export async function submitForm(
     }
   }
 
-  const { masterSheetId, googleCreds } = await getSettings();
+  const { masterSheetId, googleCreds, driveFolderId } = await getSettings();
 
-  if (!masterSheetId || !googleCreds) {
+  if (!masterSheetId || !googleCreds || !driveFolderId) {
      return {
-        message: 'Sheet is not configured. Please check your settings on the Manage Sheets page.',
+        message: 'Master Sheet ID, Google Drive Folder ID, or Credentials are not configured. Please check your settings on the Manage Sheets page.',
         status: 'error',
     };
   }
@@ -176,12 +152,15 @@ export async function submitForm(
         const backPhotoFileName = `${formData.fullName.replace(/\s+/g, '_')}_${fileTimestamp}_back.jpg`;
 
         [frontPhotoLink, backPhotoLink] = await Promise.all([
-            uploadPhotoToDrive(drive, formData.documentPhotoFront, frontPhotoFileName),
-            uploadPhotoToDrive(drive, formData.documentPhotoBack, backPhotoFileName)
+            uploadPhotoToDrive(drive, formData.documentPhotoFront, frontPhotoFileName, driveFolderId),
+            uploadPhotoToDrive(drive, formData.documentPhotoBack, backPhotoFileName, driveFolderId)
         ]);
       } catch(driveError: any) {
           if (driveError.code === 403) {
-            return { message: `Google Drive Error: Permission Denied (Code: 403). Please ensure: 1. The 'VoteX Document Photos' folder in your Google Drive is shared with the service account email ('client_email' from your JSON) as 'Editor'. 2. The Google Drive API is enabled in your Cloud project.`, status: 'error' };
+            return { message: `Google Drive Error: Permission Denied (Code: 403). Please ensure: 1. The Google Drive folder specified in settings is shared with your service account email as 'Editor'. 2. The Google Drive API is enabled in your Cloud project.`, status: 'error' };
+          }
+          if (driveError.code === 404) {
+             return { message: `Google Drive Error: Folder Not Found (Code: 404). The folder ID specified in your settings is incorrect or has been deleted. Please verify the ID.`, status: 'error' };
           }
           return { message: `Failed to upload photo to Google Drive: ${driveError.message}`, status: 'error'};
       }
@@ -208,17 +187,17 @@ export async function submitForm(
       ]];
 
       const headerRow = ['Timestamp', 'Voter Type', 'Full Name', 'Mobile', 'Address', 'RSP No', 'Reason/Problem', 'Submitted By Aadhaar', 'Submitted By Name', 'Front Photo Link', 'Back Photo Link'];
-
+      const sheetName = 'Sheet1';
       try {
         const headerResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Sheet1!A1:K1',
+            range: `${sheetName}!A1:K1`,
         });
 
         if (!headerResponse.data.values || headerResponse.data.values.length === 0) {
             await sheets.spreadsheets.values.update({
                 spreadsheetId,
-                range: 'Sheet1!A1',
+                range: `${sheetName}!A1`,
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                     values: [headerRow],
@@ -228,7 +207,7 @@ export async function submitForm(
         
         await sheets.spreadsheets.values.append({
             spreadsheetId,
-            range: 'Sheet1!A1',
+            range: `${sheetName}!A1`,
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values,
@@ -238,8 +217,8 @@ export async function submitForm(
           if (sheetError.code === 403) {
               return { message: `Google Sheets Error: Permission Denied (Code: 403). Please ensure your Google Sheet is shared with the service account email ('client_email' from your JSON) as 'Editor'.`, status: 'error' };
           }
-          if (sheetError.message && sheetError.message.toLowerCase().includes('not found')) {
-               return { message: `Google Sheets Error: Sheet Not Found. Please double-check that the "Master Sheet ID" in your settings is correct and you have shared the sheet.`, status: 'error'};
+          if (sheetError.code === 404) {
+               return { message: `Google Sheets Error: Sheet Not Found (Code: 404). The Master Sheet ID in your settings is incorrect. Please verify it.`, status: 'error'};
           }
           return { message: `Failed to save to Google Sheet: ${sheetError.message}`, status: 'error' };
       }
